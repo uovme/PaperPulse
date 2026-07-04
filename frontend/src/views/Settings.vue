@@ -6,28 +6,6 @@
         <h2>{{ copy.title }}</h2>
         <p>{{ copy.description }}</p>
       </div>
-      <div class="settings-preference-strip" aria-label="Preference shortcuts">
-        <div class="settings-segmented">
-          <button
-            type="button"
-            :class="['settings-segment', appStore.language === 'zh' ? 'settings-segment-active' : '']"
-            @click="appStore.setLanguage('zh')"
-          >
-            中文
-          </button>
-          <button
-            type="button"
-            :class="['settings-segment', appStore.language === 'en' ? 'settings-segment-active' : '']"
-            @click="appStore.setLanguage('en')"
-          >
-            EN
-          </button>
-        </div>
-        <button class="settings-mode-button" type="button" @click="appStore.toggleTheme">
-          <span class="settings-mode-dot"></span>
-          {{ appStore.isDarkMode ? copy.dayMode : copy.darkMode }}
-        </button>
-      </div>
     </section>
 
     <div class="settings-layout">
@@ -296,18 +274,8 @@
             </label>
           </div>
 
-          <div class="settings-grid">
-            <label class="settings-field">
-              <span>{{ copy.hour }}</span>
-              <input v-model.number="scheduleForm.cron_hour" type="number" min="0" max="23" class="settings-input" />
-            </label>
-            <label class="settings-field">
-              <span>{{ copy.minute }}</span>
-              <input v-model.number="scheduleForm.cron_minute" type="number" min="0" max="59" class="settings-input" />
-            </label>
-            <div class="settings-info md:col-span-2">
-              {{ copy.timezoneNote }}
-            </div>
+          <div class="settings-info">
+            {{ copy.timezoneNote }}
           </div>
 
           <div class="settings-actions">
@@ -382,8 +350,6 @@ const copyMap = {
     syncPapers: '同步高相关论文',
     beijingTime: '北京时间',
     executionTime: '执行时间',
-    hour: '小时',
-    minute: '分钟',
     scheduleHint: '每日自动抓取、分析和报告会按这个北京时间触发。',
     timezoneNote: '后端调度器使用 Asia/Shanghai 时区；即使服务器在 UTC 环境运行，也按这里选择的北京时间执行。',
     saveConfig: '保存配置',
@@ -460,8 +426,6 @@ const copyMap = {
     syncPapers: 'Sync high-relevance papers',
     beijingTime: 'Beijing time',
     executionTime: 'Execution time',
-    hour: 'Hour',
-    minute: 'Minute',
     scheduleHint: 'The daily fetch, analysis, and report workflow runs at this Beijing time.',
     timezoneNote: 'The backend scheduler uses Asia/Shanghai, so this time runs as Beijing time even on UTC servers.',
     saveConfig: 'Save configuration',

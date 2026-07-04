@@ -2,7 +2,7 @@
   <router-view v-if="!appStore.isLoggedIn" />
 
   <div v-else class="paper-shell flex min-h-[100dvh] overflow-hidden">
-    <aside :class="['paper-sidebar flex flex-col', appStore.sidebarCollapsed ? 'w-[76px]' : 'w-64']">
+    <aside :class="['paper-sidebar flex flex-col', appStore.sidebarCollapsed ? 'paper-sidebar-collapsed w-[76px]' : 'w-64']">
       <div class="flex h-16 items-center gap-3 px-4">
         <router-link to="/dashboard" class="flex min-w-0 flex-1 items-center gap-3">
           <div class="paper-logo-mark flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl">
@@ -88,7 +88,6 @@
             {{ item.mark }}
           </span>
           <span v-if="!appStore.sidebarCollapsed" class="min-w-0 flex-1 truncate">{{ item.label }}</span>
-          <span v-if="!appStore.sidebarCollapsed" class="paper-side-nav-hint hidden lg:inline">{{ item.hint }}</span>
         </router-link>
       </nav>
 
@@ -160,7 +159,7 @@
           <h1 class="text-base font-semibold tracking-tight text-[var(--xai-ink)]">{{ currentTitle }}</h1>
           <p class="mt-0.5 text-xs text-[var(--xai-mute)]">{{ currentSubtitle }}</p>
         </div>
-        <div class="paper-mainbar-actions">
+        <div v-if="route.path !== '/settings'" class="paper-mainbar-actions">
           <button class="paper-control-button" type="button" :title="ui.toggleLanguageTitle" @click="appStore.toggleLanguage">
             <span class="paper-control-mark">{{ appStore.language === 'zh' ? 'EN' : '中' }}</span>
             <span class="hidden sm:inline">{{ appStore.language === 'zh' ? 'English' : '中文' }}</span>
