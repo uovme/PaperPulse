@@ -26,6 +26,8 @@
 - **阅读队列** — 手工保存外部论文/文章，AI 分析结果可直接加入阅读队列
 - **工作流进度** — 抓取、分析、邮件、WebDAV 备份都有执行记录、节点日志和进度条
 - **分析任务控制** — 长时间 AI 分析支持暂停、继续、取消；抓取并分析时总数按本次新抓取论文计算
+- **界面偏好** — 支持中英语言切换、深色模式和白天模式，偏好保存在当前浏览器
+- **北京时间定时任务** — 每日自动工作流可设置为北京时间的具体几点几分，后端按 `Asia/Shanghai` 调度
 - **邮件推送** — 高相关性论文每日自动推送到邮箱，支持 SMTP SSL/STARTTLS，邮件正文包含摘要
 - **WebDAV 同步** — 订阅源、关键词、论文和 AI 分析结果可备份到坚果云等 WebDAV 服务
 - **论文分类** — 按期刊、关键词、相关性分值筛选
@@ -77,7 +79,7 @@ npm run dev
 1. **AI 配置** — 填入 API 地址、Key、模型名（如 DeepSeek: `https://api.deepseek.com/v1`）
 2. **邮件配置** — SMTP 服务器信息
 3. **WebDAV 配置** — WebDAV 地址和凭证
-4. **定时任务** — 设置每日执行时间和相关性阈值
+4. **定时任务** — 设置每日按北京时间执行的具体时间
 
 ### 使用流程
 
@@ -140,6 +142,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build-xpi.ps1
 - **Reading Queue** — Save external papers or AI analysis results with tags, search, unread/read status, and notes
 - **Observable Workflows** — Fetch, analyze, email, and WebDAV backup steps are persisted with execution logs and progress
 - **Analysis Controls** — Long-running AI analysis can be paused, resumed, or cancelled
+- **Interface Preferences** — Switch Chinese/English copy plus dark mode and day mode, persisted in the browser
+- **Beijing-Time Scheduling** — Configure the exact daily run time in `Asia/Shanghai`
 - **Email Push** — Daily auto-push of highly relevant papers with abstract content; supports SMTP SSL/STARTTLS
 - **WebDAV Sync** — Backup feeds, keywords, papers, and AI analysis results to WebDAV services
 - **Paper Classification** — Filter by journal, keyword, relevance score

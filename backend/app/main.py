@@ -2,6 +2,7 @@ import os
 import logging
 import asyncio
 import json as json_mod
+from zoneinfo import ZoneInfo
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -45,7 +46,10 @@ else:
 
 logger = logging.getLogger(__name__)
 
-scheduler = AsyncIOScheduler()
+BEIJING_TIMEZONE = "Asia/Shanghai"
+BEIJING_TZ = ZoneInfo(BEIJING_TIMEZONE)
+
+scheduler = AsyncIOScheduler(timezone=BEIJING_TZ)
 
 
 async def daily_job():
@@ -62,7 +66,13 @@ async def daily_job():
         )
 
 
-async def _get_schedule_config() -> tuple[int, int]:
+def get_schedule_timezone(timezone_name: str | None = None) -> ZoneInfo:
+    if timezone_name != BEIJING_TIMEZONE:
+        return BEIJING_TZ
+    return BEIJING_TZ
+
+
+async def _get_schedule_config() -> tuple[int, int, str]:
     """Async helper to read cron config from DB."""
     try:
         async with engine.connect() as conn:
@@ -72,12 +82,13 @@ async def _get_schedule_config() -> tuple[int, int]:
                 cfg = json.loads(row[0])
                 hour = int(cfg.get("cron_hour", 6))
                 minute = int(cfg.get("cron_minute", 0))
+                timezone_name = str(cfg.get("timezone", BEIJING_TIMEZONE))
                 if 0 <= hour <= 23 and 0 <= minute <= 59:
-                    return hour, minute
+                    return hour, minute, BEIJING_TIMEZONE if timezone_name != BEIJING_TIMEZONE else timezone_name
                 logger.warning("Invalid schedule_config cron time hour=%s minute=%s; using 06:00", hour, minute)
     except Exception:
         pass
-    return 6, 0
+    return 6, 0, BEIJING_TIMEZONE
 
 
 @asynccontextmanager
@@ -99,10 +110,18 @@ async def lifespan(app: FastAPI):
         await db.commit()
         logger.info("Cleaned up stale running executions")
 
-    hour, minute = await _get_schedule_config()
-    scheduler.add_job(daily_job, "cron", hour=hour, minute=minute, id="daily_job", replace_existing=True)
+    hour, minute, timezone_name = await _get_schedule_config()
+    scheduler.add_job(
+        daily_job,
+        "cron",
+        hour=hour,
+        minute=minute,
+        timezone=get_schedule_timezone(timezone_name),
+        id="daily_job",
+        replace_existing=True,
+    )
     scheduler.start()
-    logger.info(f"Scheduler started: daily job at {hour:02d}:{minute:02d}")
+    logger.info("Scheduler started: daily job at %02d:%02d %s", hour, minute, timezone_name)
 
     yield
 

@@ -109,9 +109,15 @@ async def get_schedule_config(db: AsyncSession = Depends(get_db)):
 async def set_schedule_config(data: ScheduleConfig, db: AsyncSession = Depends(get_db)):
     await _set_setting(db, "schedule_config", data.model_dump())
     # Hot-reload scheduler
-    from ..main import scheduler
+    from ..main import scheduler, get_schedule_timezone
     try:
-        scheduler.reschedule_job("daily_job", trigger="cron", hour=data.cron_hour, minute=data.cron_minute)
+        scheduler.reschedule_job(
+            "daily_job",
+            trigger="cron",
+            hour=data.cron_hour,
+            minute=data.cron_minute,
+            timezone=get_schedule_timezone(data.timezone),
+        )
     except Exception:
         pass
     return {"success": True}

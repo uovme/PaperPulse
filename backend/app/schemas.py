@@ -264,6 +264,7 @@ class WeKnoraConfig(BaseModel):
 class ScheduleConfig(BaseModel):
     cron_hour: int = Field(default=6, ge=0, le=23)
     cron_minute: int = Field(default=0, ge=0, le=59)
+    timezone: str = Field(default="Asia/Shanghai", pattern="^Asia/Shanghai$")
 
 
 # Dashboard

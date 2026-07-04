@@ -1,437 +1,523 @@
 <template>
-  <div class="space-y-6">
-    <!-- Tab Navigation -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-      <div class="border-b border-gray-200">
-        <nav class="flex -mb-px px-6 overflow-x-auto">
-          <button
-            v-for="tab in tabs"
-            :key="tab.id"
-            @click="activeTab = tab.id"
-            :class="[
-              'py-4 px-6 text-sm font-medium border-b-2 transition-colors whitespace-nowrap',
-              activeTab === tab.id
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-            ]"
-          >
-            {{ tab.label }}
-          </button>
-        </nav>
+  <div class="settings-page space-y-5">
+    <section class="settings-hero">
+      <div class="min-w-0">
+        <p class="xai-eyebrow">{{ copy.eyebrow }}</p>
+        <h2>{{ copy.title }}</h2>
+        <p>{{ copy.description }}</p>
       </div>
+      <div class="settings-preference-strip" aria-label="Preference shortcuts">
+        <div class="settings-segmented">
+          <button
+            type="button"
+            :class="['settings-segment', appStore.language === 'zh' ? 'settings-segment-active' : '']"
+            @click="appStore.setLanguage('zh')"
+          >
+            中文
+          </button>
+          <button
+            type="button"
+            :class="['settings-segment', appStore.language === 'en' ? 'settings-segment-active' : '']"
+            @click="appStore.setLanguage('en')"
+          >
+            EN
+          </button>
+        </div>
+        <button class="settings-mode-button" type="button" @click="appStore.toggleTheme">
+          <span class="settings-mode-dot"></span>
+          {{ appStore.isDarkMode ? copy.dayMode : copy.darkMode }}
+        </button>
+      </div>
+    </section>
 
-      <div class="p-6">
-        <!-- AI Config Tab -->
-        <div v-if="activeTab === 'ai'" class="space-y-4">
-          <h3 class="text-base font-semibold text-gray-800">AI 配置</h3>
-          <p class="text-sm text-gray-500">配置 AI 模型用于论文分析和相关性评估</p>
+    <div class="settings-layout">
+      <aside class="settings-tablist" aria-label="Settings sections">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          type="button"
+          :class="['settings-tab', activeTab === tab.id ? 'settings-tab-active' : '']"
+          @click="activeTab = tab.id"
+        >
+          <span class="settings-tab-mark">{{ tab.mark }}</span>
+          <span class="min-w-0">
+            <span class="settings-tab-label">{{ tab.label }}</span>
+            <span class="settings-tab-desc">{{ tab.desc }}</span>
+          </span>
+        </button>
+      </aside>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <section class="settings-panel">
+        <div class="settings-panel-header">
+          <div>
+            <p class="xai-eyebrow">{{ currentTab?.label }}</p>
+            <h3>{{ currentTab?.title }}</h3>
+            <p>{{ currentTab?.intro }}</p>
+          </div>
+        </div>
+
+        <div v-if="activeTab === 'preferences'" class="settings-stack">
+          <div class="settings-option-row">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">API 地址</label>
-              <input
-                v-model="aiForm.api_base"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="https://api.openai.com/v1"
-              />
+              <h4>{{ copy.languageTitle }}</h4>
+              <p>{{ copy.languageDesc }}</p>
             </div>
+            <div class="settings-segmented">
+              <button
+                type="button"
+                :class="['settings-segment', appStore.language === 'zh' ? 'settings-segment-active' : '']"
+                @click="appStore.setLanguage('zh')"
+              >
+                中文
+              </button>
+              <button
+                type="button"
+                :class="['settings-segment', appStore.language === 'en' ? 'settings-segment-active' : '']"
+                @click="appStore.setLanguage('en')"
+              >
+                English
+              </button>
+            </div>
+          </div>
+
+          <div class="settings-option-row">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+              <h4>{{ copy.themeTitle }}</h4>
+              <p>{{ copy.themeDesc }}</p>
+            </div>
+            <button class="settings-mode-button" type="button" @click="appStore.toggleTheme">
+              <span class="settings-mode-dot"></span>
+              {{ appStore.isDarkMode ? copy.dayMode : copy.darkMode }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="activeTab === 'ai'" class="settings-stack">
+          <div class="settings-grid">
+            <label class="settings-field md:col-span-2">
+              <span>{{ copy.apiBase }}</span>
+              <input v-model="aiForm.api_base" type="text" class="settings-input" placeholder="https://api.openai.com/v1" />
+            </label>
+            <label class="settings-field">
+              <span>{{ copy.apiKey }}</span>
               <div class="relative">
                 <input
                   v-model="aiForm.api_key"
                   :type="showApiKey ? 'text' : 'password'"
-                  class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                  class="settings-input pr-10"
                   placeholder="sk-..."
                 />
-                <button
-                  type="button"
-                  @click="showApiKey = !showApiKey"
-                  class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  <svg v-if="!showApiKey" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                  </svg>
+                <button class="settings-inline-icon" type="button" @click="showApiKey = !showApiKey">
+                  {{ showApiKey ? copy.hide : copy.show }}
                 </button>
               </div>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">模型</label>
-              <input
-                v-model="aiForm.model"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="gpt-4o-mini"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">推理强度</label>
-              <select
-                v-model="aiForm.reasoning_effort"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-              >
-                <option value="xhigh">xhigh - 最深推理</option>
-                <option value="high">high - 深度推理</option>
-                <option value="medium">medium - 均衡模式</option>
-                <option value="low">low - 快速响应</option>
-                <option value="none">none - 不推理</option>
+            </label>
+            <label class="settings-field">
+              <span>{{ copy.model }}</span>
+              <input v-model="aiForm.model" type="text" class="settings-input" placeholder="gpt-4o-mini" />
+            </label>
+            <label class="settings-field">
+              <span>{{ copy.reasoning }}</span>
+              <select v-model="aiForm.reasoning_effort" class="settings-input">
+                <option value="xhigh">xhigh</option>
+                <option value="high">high</option>
+                <option value="medium">medium</option>
+                <option value="low">low</option>
+                <option value="none">none</option>
               </select>
-            </div>
-            <div class="flex items-center space-x-3 pt-6">
+            </label>
+            <label class="settings-switch-line">
+              <span>
+                <strong>{{ copy.aiEnabled }}</strong>
+                <small>{{ aiForm.enabled ? copy.enabled : copy.disabled }}</small>
+              </span>
               <button
+                type="button"
+                :class="['settings-switch', aiForm.enabled ? 'settings-switch-on' : '']"
                 @click="aiForm.enabled = !aiForm.enabled"
-                :class="[
-                  'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none',
-                  aiForm.enabled ? 'bg-blue-600' : 'bg-gray-300',
-                ]"
               >
-                <span
-                  :class="[
-                    'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
-                    aiForm.enabled ? 'translate-x-4' : 'translate-x-0',
-                  ]"
-                ></span>
+                <span></span>
               </button>
-              <span class="text-sm text-gray-700">{{ aiForm.enabled ? '已启用' : '已禁用' }}</span>
-            </div>
+            </label>
           </div>
 
-          <div class="flex items-center space-x-3 pt-4">
-            <button
-              @click="saveAI"
-              :disabled="savingAI"
-              class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              {{ savingAI ? '保存中...' : '保存配置' }}
+          <div class="settings-actions">
+            <button class="xai-btn xai-btn-primary" type="button" :disabled="savingAI" @click="saveAI">
+              {{ savingAI ? copy.saving : copy.saveConfig }}
             </button>
-            <button
-              @click="testAI"
-              :disabled="testingAI"
-              class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
-            >
-              {{ testingAI ? '测试中...' : '测试连接' }}
+            <button class="xai-btn" type="button" :disabled="testingAI" @click="testAI">
+              {{ testingAI ? copy.testing : copy.testConnection }}
             </button>
           </div>
         </div>
 
-        <!-- Email Config Tab -->
-        <div v-if="activeTab === 'email'" class="space-y-4">
-          <h3 class="text-base font-semibold text-gray-800">邮件配置</h3>
-          <p class="text-sm text-gray-500">配置 SMTP 邮件服务，用于发送论文报告</p>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">SMTP 服务器</label>
-              <input
-                v-model="emailForm.smtp_server"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="smtp.gmail.com"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">端口</label>
-              <input
-                v-model.number="emailForm.smtp_port"
-                type="number"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="587"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
-              <input
-                v-model="emailForm.smtp_user"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="your@email.com"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">密码</label>
-              <input
-                v-model="emailForm.smtp_password"
-                type="password"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="******"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">发件人名称</label>
-              <input
-                v-model="emailForm.sender_name"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="PaperPulse"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">收件人</label>
-              <input
-                v-model="emailForm.recipient"
-                type="email"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="recipient@email.com"
-              />
-            </div>
-            <div class="flex items-center space-x-3 pt-2">
+        <div v-if="activeTab === 'email'" class="settings-stack">
+          <div class="settings-grid">
+            <label class="settings-field">
+              <span>{{ copy.smtpServer }}</span>
+              <input v-model="emailForm.smtp_server" type="text" class="settings-input" placeholder="smtp.gmail.com" />
+            </label>
+            <label class="settings-field">
+              <span>{{ copy.port }}</span>
+              <input v-model.number="emailForm.smtp_port" type="number" class="settings-input" placeholder="587" />
+            </label>
+            <label class="settings-field">
+              <span>{{ copy.username }}</span>
+              <input v-model="emailForm.smtp_user" type="text" class="settings-input" placeholder="your@email.com" />
+            </label>
+            <label class="settings-field">
+              <span>{{ copy.password }}</span>
+              <input v-model="emailForm.smtp_password" type="password" class="settings-input" placeholder="******" />
+            </label>
+            <label class="settings-field">
+              <span>{{ copy.senderName }}</span>
+              <input v-model="emailForm.sender_name" type="text" class="settings-input" placeholder="PaperPulse" />
+            </label>
+            <label class="settings-field">
+              <span>{{ copy.recipient }}</span>
+              <input v-model="emailForm.recipient" type="email" class="settings-input" placeholder="recipient@email.com" />
+            </label>
+            <label class="settings-switch-line md:col-span-2">
+              <span>
+                <strong>{{ copy.emailEnabled }}</strong>
+                <small>{{ emailForm.enabled ? copy.enabled : copy.disabled }}</small>
+              </span>
               <button
+                type="button"
+                :class="['settings-switch', emailForm.enabled ? 'settings-switch-on' : '']"
                 @click="emailForm.enabled = !emailForm.enabled"
-                :class="[
-                  'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none',
-                  emailForm.enabled ? 'bg-blue-600' : 'bg-gray-300',
-                ]"
               >
-                <span
-                  :class="[
-                    'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
-                    emailForm.enabled ? 'translate-x-4' : 'translate-x-0',
-                  ]"
-                ></span>
+                <span></span>
               </button>
-              <span class="text-sm text-gray-700">{{ emailForm.enabled ? '已启用' : '已禁用' }}</span>
-            </div>
+            </label>
           </div>
 
-          <div class="flex items-center space-x-3 pt-4">
-            <button
-              @click="saveEmail"
-              :disabled="savingEmail"
-              class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              {{ savingEmail ? '保存中...' : '保存配置' }}
+          <div class="settings-actions">
+            <button class="xai-btn xai-btn-primary" type="button" :disabled="savingEmail" @click="saveEmail">
+              {{ savingEmail ? copy.saving : copy.saveConfig }}
             </button>
-            <button
-              @click="testEmail"
-              :disabled="testingEmail"
-              class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
-            >
-              {{ testingEmail ? '测试中...' : '发送测试邮件' }}
+            <button class="xai-btn" type="button" :disabled="testingEmail" @click="testEmail">
+              {{ testingEmail ? copy.testing : copy.sendTestEmail }}
             </button>
           </div>
         </div>
 
-        <!-- WebDAV Config Tab -->
-        <div v-if="activeTab === 'webdav'" class="space-y-4">
-          <h3 class="text-base font-semibold text-gray-800">WebDAV 配置</h3>
-          <p class="text-sm text-gray-500">配置 WebDAV 用于数据备份和同步</p>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-1">WebDAV URL</label>
-              <input
-                v-model="webdavForm.url"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="https://dav.example.com/dav/"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
-              <input
-                v-model="webdavForm.username"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="username"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">密码</label>
-              <input
-                v-model="webdavForm.password"
-                type="password"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="******"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">远程路径</label>
-              <input
-                v-model="webdavForm.remote_path"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="/paperpulse/"
-              />
-            </div>
+        <div v-if="activeTab === 'webdav'" class="settings-stack">
+          <div class="settings-grid">
+            <label class="settings-field md:col-span-2">
+              <span>{{ copy.webdavUrl }}</span>
+              <input v-model="webdavForm.url" type="text" class="settings-input" placeholder="https://dav.example.com/dav/" />
+            </label>
+            <label class="settings-field">
+              <span>{{ copy.username }}</span>
+              <input v-model="webdavForm.username" type="text" class="settings-input" placeholder="username" />
+            </label>
+            <label class="settings-field">
+              <span>{{ copy.password }}</span>
+              <input v-model="webdavForm.password" type="password" class="settings-input" placeholder="******" />
+            </label>
+            <label class="settings-field md:col-span-2">
+              <span>{{ copy.remotePath }}</span>
+              <input v-model="webdavForm.remote_path" type="text" class="settings-input" placeholder="/paperpulse/" />
+            </label>
           </div>
 
-          <div class="flex items-center space-x-3 pt-4">
-            <button
-              @click="saveWebDAV"
-              :disabled="savingWebDAV"
-              class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              {{ savingWebDAV ? '保存中...' : '保存配置' }}
+          <div class="settings-actions">
+            <button class="xai-btn xai-btn-primary" type="button" :disabled="savingWebDAV" @click="saveWebDAV">
+              {{ savingWebDAV ? copy.saving : copy.saveConfig }}
             </button>
-            <button
-              @click="testWebDAV"
-              :disabled="testingWebDAV"
-              class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
-            >
-              {{ testingWebDAV ? '测试中...' : '测试连接' }}
+            <button class="xai-btn" type="button" :disabled="testingWebDAV" @click="testWebDAV">
+              {{ testingWebDAV ? copy.testing : copy.testConnection }}
             </button>
           </div>
         </div>
 
-        <!-- WeKnora Config Tab -->
-        <div v-if="activeTab === 'weknora'" class="space-y-4">
-          <h3 class="text-base font-semibold text-gray-800">WeKnora 联动</h3>
-          <p class="text-sm text-gray-500">同步报告和高相关论文到 WeKnora 知识库</p>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-1">API 地址</label>
-              <input
-                v-model="weknoraForm.base_url"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="http://localhost:8080/api/v1"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
-              <input
-                v-model="weknoraForm.api_key"
-                type="password"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="sk-..."
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">知识库 ID</label>
-              <input
-                v-model="weknoraForm.knowledge_base_id"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="kb-..."
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">论文同步最低分</label>
-              <input
-                v-model.number="weknoraForm.min_score_to_sync"
-                type="number"
-                min="0"
-                max="10"
-                step="0.5"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="6.0"
-              />
-            </div>
-            <div class="flex items-center space-x-3 pt-6">
+        <div v-if="activeTab === 'weknora'" class="settings-stack">
+          <div class="settings-grid">
+            <label class="settings-field md:col-span-2">
+              <span>{{ copy.apiBase }}</span>
+              <input v-model="weknoraForm.base_url" type="text" class="settings-input" placeholder="http://localhost:8080/api/v1" />
+            </label>
+            <label class="settings-field">
+              <span>{{ copy.apiKey }}</span>
+              <input v-model="weknoraForm.api_key" type="password" class="settings-input" placeholder="sk-..." />
+            </label>
+            <label class="settings-field">
+              <span>{{ copy.knowledgeBase }}</span>
+              <input v-model="weknoraForm.knowledge_base_id" type="text" class="settings-input" placeholder="kb-..." />
+            </label>
+            <label class="settings-field">
+              <span>{{ copy.minScore }}</span>
+              <input v-model.number="weknoraForm.min_score_to_sync" type="number" min="0" max="10" step="0.5" class="settings-input" />
+            </label>
+            <label class="settings-switch-line">
+              <span>
+                <strong>{{ copy.weknoraEnabled }}</strong>
+                <small>{{ weknoraForm.enabled ? copy.enabled : copy.disabled }}</small>
+              </span>
               <button
+                type="button"
+                :class="['settings-switch', weknoraForm.enabled ? 'settings-switch-on' : '']"
                 @click="weknoraForm.enabled = !weknoraForm.enabled"
-                :class="[
-                  'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none',
-                  weknoraForm.enabled ? 'bg-blue-600' : 'bg-gray-300',
-                ]"
               >
-                <span
-                  :class="[
-                    'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
-                    weknoraForm.enabled ? 'translate-x-4' : 'translate-x-0',
-                  ]"
-                ></span>
+                <span></span>
               </button>
-              <span class="text-sm text-gray-700">{{ weknoraForm.enabled ? '已启用' : '已禁用' }}</span>
-            </div>
-            <label class="flex items-center gap-2 text-sm text-gray-700">
-              <input v-model="weknoraForm.sync_reports" type="checkbox" class="rounded border-gray-300" />
-              同步报告 Markdown
             </label>
-            <label class="flex items-center gap-2 text-sm text-gray-700">
-              <input v-model="weknoraForm.sync_papers" type="checkbox" class="rounded border-gray-300" />
-              同步高相关论文
+            <label class="settings-check">
+              <input v-model="weknoraForm.sync_reports" type="checkbox" />
+              <span>{{ copy.syncReports }}</span>
+            </label>
+            <label class="settings-check">
+              <input v-model="weknoraForm.sync_papers" type="checkbox" />
+              <span>{{ copy.syncPapers }}</span>
             </label>
           </div>
 
-          <div class="flex items-center space-x-3 pt-4">
-            <button
-              @click="saveWeKnora"
-              :disabled="savingWeKnora"
-              class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              {{ savingWeKnora ? '保存中...' : '保存配置' }}
+          <div class="settings-actions">
+            <button class="xai-btn xai-btn-primary" type="button" :disabled="savingWeKnora" @click="saveWeKnora">
+              {{ savingWeKnora ? copy.saving : copy.saveConfig }}
             </button>
-            <button
-              @click="testWeKnora"
-              :disabled="testingWeKnora"
-              class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
-            >
-              {{ testingWeKnora ? '测试中...' : '测试连接' }}
+            <button class="xai-btn" type="button" :disabled="testingWeKnora" @click="testWeKnora">
+              {{ testingWeKnora ? copy.testing : copy.testConnection }}
             </button>
           </div>
         </div>
 
-        <!-- Schedule Config Tab -->
-        <div v-if="activeTab === 'schedule'" class="space-y-4">
-          <h3 class="text-base font-semibold text-gray-800">定时任务配置</h3>
-          <p class="text-sm text-gray-500">配置自动抓取和分析的定时任务</p>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div v-if="activeTab === 'schedule'" class="settings-stack">
+          <div class="settings-time-card">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">执行小时 (0-23)</label>
-              <input
-                v-model.number="scheduleForm.cron_hour"
-                type="number"
-                min="0"
-                max="23"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="8"
-              />
+              <p class="xai-eyebrow">{{ copy.beijingTime }}</p>
+              <h4>{{ schedulePreview }}</h4>
+              <p>{{ copy.scheduleHint }}</p>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">执行分钟 (0-59)</label>
-              <input
-                v-model.number="scheduleForm.cron_minute"
-                type="number"
-                min="0"
-                max="59"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="0"
-              />
+            <label class="settings-field settings-time-input">
+              <span>{{ copy.executionTime }}</span>
+              <input v-model="scheduleTime" type="time" class="settings-input" />
+            </label>
+          </div>
+
+          <div class="settings-grid">
+            <label class="settings-field">
+              <span>{{ copy.hour }}</span>
+              <input v-model.number="scheduleForm.cron_hour" type="number" min="0" max="23" class="settings-input" />
+            </label>
+            <label class="settings-field">
+              <span>{{ copy.minute }}</span>
+              <input v-model.number="scheduleForm.cron_minute" type="number" min="0" max="59" class="settings-input" />
+            </label>
+            <div class="settings-info md:col-span-2">
+              {{ copy.timezoneNote }}
             </div>
           </div>
 
-          <div class="flex items-center space-x-3 pt-4">
-            <button
-              @click="saveSchedule"
-              :disabled="savingSchedule"
-              class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              {{ savingSchedule ? '保存中...' : '保存配置' }}
+          <div class="settings-actions">
+            <button class="xai-btn xai-btn-primary" type="button" :disabled="savingSchedule" @click="saveSchedule">
+              {{ savingSchedule ? copy.saving : copy.saveConfig }}
             </button>
           </div>
         </div>
-      </div>
+
+        <div v-if="activeTab === 'changelog'" class="settings-stack">
+          <div class="settings-release-grid">
+            <article v-for="entry in copy.changelogItems" :key="entry.title" class="settings-release-card">
+              <p class="xai-eyebrow">{{ entry.date }}</p>
+              <h4>{{ entry.title }}</h4>
+              <p>{{ entry.body }}</p>
+            </article>
+          </div>
+          <div class="settings-roadmap">
+            <p class="xai-eyebrow">{{ copy.roadmapTitle }}</p>
+            <ul>
+              <li v-for="item in copy.roadmapItems" :key="item">{{ item }}</li>
+            </ul>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { settingsApi } from '@/api'
 import { useAppStore } from '@/stores/app'
 
+type TabId = 'preferences' | 'ai' | 'email' | 'webdav' | 'weknora' | 'schedule' | 'changelog'
+
 const appStore = useAppStore()
 
-const activeTab = ref('ai')
+const copyMap = {
+  zh: {
+    eyebrow: '设置',
+    title: '系统偏好与连接配置',
+    description: '统一管理界面语言、外观、AI、邮件、同步和北京时间定时任务。',
+    dayMode: '白天模式',
+    darkMode: '深色模式',
+    languageTitle: '语言',
+    languageDesc: '切换应用外壳和设置页语言，偏好会保存在当前浏览器。',
+    themeTitle: '外观模式',
+    themeDesc: '深色模式适合长时间阅读，白天模式适合明亮环境。',
+    apiBase: 'API 地址',
+    apiKey: 'API Key',
+    model: '模型',
+    reasoning: '推理强度',
+    aiEnabled: 'AI 分析',
+    enabled: '已启用',
+    disabled: '已禁用',
+    show: '显示',
+    hide: '隐藏',
+    smtpServer: 'SMTP 服务器',
+    port: '端口',
+    username: '用户名',
+    password: '密码',
+    senderName: '发件人名称',
+    recipient: '收件人',
+    emailEnabled: '邮件推送',
+    webdavUrl: 'WebDAV URL',
+    remotePath: '远程路径',
+    knowledgeBase: '知识库 ID',
+    minScore: '论文同步最低分',
+    weknoraEnabled: 'WeKnora 联动',
+    syncReports: '同步报告 Markdown',
+    syncPapers: '同步高相关论文',
+    beijingTime: '北京时间',
+    executionTime: '执行时间',
+    hour: '小时',
+    minute: '分钟',
+    scheduleHint: '每日自动抓取、分析和报告会按这个北京时间触发。',
+    timezoneNote: '后端调度器使用 Asia/Shanghai 时区；即使服务器在 UTC 环境运行，也按这里选择的北京时间执行。',
+    saveConfig: '保存配置',
+    saving: '保存中...',
+    testConnection: '测试连接',
+    testing: '测试中...',
+    sendTestEmail: '发送测试邮件',
+    roadmapTitle: '日后功能方向',
+    changelogItems: [
+      {
+        date: '2026-07-04',
+        title: 'UI 与偏好系统统一',
+        body: '设置页、账户菜单和应用外壳统一到工作台风格，并新增语言、深色模式和白天模式切换。',
+      },
+      {
+        date: '2026-07-04',
+        title: '北京时间定时任务',
+        body: '定时任务从小时/分钟输入升级为清晰的北京时间选择，后端调度器同步使用 Asia/Shanghai。',
+      },
+      {
+        date: '2026-07-04',
+        title: '账户入口稳定性',
+        body: '侧栏底部账户区改为固定布局层，避免在长页面、折叠侧栏或窄屏状态下消失。',
+      },
+    ],
+    roadmapItems: [
+      '扩展全站完整中英双语覆盖，包括论文、报告和工作流详情页。',
+      '新增任务日历、失败重试、运行窗口和节假日跳过策略。',
+      '强化 Zotero 双向同步、WeKnora 知识库回写和报告协作批注。',
+      '加入更细的主题 token 和密度设置，服务长时间阅读与高频运维场景。',
+    ],
+    tabs: [
+      { id: 'preferences', label: '偏好', title: '语言与外观', desc: '主题/语言', intro: '这些偏好只影响当前浏览器，切换后立即生效。', mark: '偏' },
+      { id: 'ai', label: 'AI', title: 'AI 配置', desc: '模型/Key', intro: '配置用于论文相关性判断、摘要和报告生成的兼容 API。', mark: 'AI' },
+      { id: 'email', label: '邮件', title: '邮件配置', desc: 'SMTP', intro: '配置每日文献报告的发件服务和默认收件人。', mark: '邮' },
+      { id: 'webdav', label: 'WebDAV', title: 'WebDAV 同步', desc: '备份', intro: '将订阅源、论文和分析结果备份到远程 WebDAV 目录。', mark: '同' },
+      { id: 'weknora', label: 'WeKnora', title: 'WeKnora 联动', desc: '知识库', intro: '同步报告和高相关论文到 WeKnora 知识库。', mark: '知' },
+      { id: 'schedule', label: '定时任务', title: '北京时间定时任务', desc: 'Asia/Shanghai', intro: '设置每日自动工作流按北京时间几点几分执行。', mark: '时' },
+      { id: 'changelog', label: '更新日志', title: '更新日志与未来方向', desc: 'Roadmap', intro: '记录本次改动，并明确后续功能演进方向。', mark: '更' },
+    ],
+  },
+  en: {
+    eyebrow: 'Settings',
+    title: 'System preferences and integrations',
+    description: 'Manage language, appearance, AI, email, sync, and Beijing-time scheduled jobs.',
+    dayMode: 'Day mode',
+    darkMode: 'Dark mode',
+    languageTitle: 'Language',
+    languageDesc: 'Switch app shell and settings language. The preference is saved in this browser.',
+    themeTitle: 'Appearance',
+    themeDesc: 'Dark mode supports long reading sessions; day mode works better in bright environments.',
+    apiBase: 'API base',
+    apiKey: 'API Key',
+    model: 'Model',
+    reasoning: 'Reasoning effort',
+    aiEnabled: 'AI analysis',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
+    show: 'Show',
+    hide: 'Hide',
+    smtpServer: 'SMTP server',
+    port: 'Port',
+    username: 'Username',
+    password: 'Password',
+    senderName: 'Sender name',
+    recipient: 'Recipient',
+    emailEnabled: 'Email delivery',
+    webdavUrl: 'WebDAV URL',
+    remotePath: 'Remote path',
+    knowledgeBase: 'Knowledge base ID',
+    minScore: 'Minimum score to sync',
+    weknoraEnabled: 'WeKnora integration',
+    syncReports: 'Sync report Markdown',
+    syncPapers: 'Sync high-relevance papers',
+    beijingTime: 'Beijing time',
+    executionTime: 'Execution time',
+    hour: 'Hour',
+    minute: 'Minute',
+    scheduleHint: 'The daily fetch, analysis, and report workflow runs at this Beijing time.',
+    timezoneNote: 'The backend scheduler uses Asia/Shanghai, so this time runs as Beijing time even on UTC servers.',
+    saveConfig: 'Save configuration',
+    saving: 'Saving...',
+    testConnection: 'Test connection',
+    testing: 'Testing...',
+    sendTestEmail: 'Send test email',
+    roadmapTitle: 'Roadmap',
+    changelogItems: [
+      {
+        date: '2026-07-04',
+        title: 'Unified UI and preferences',
+        body: 'The settings page, account menu, and app shell now share the same workbench language with language and theme controls.',
+      },
+      {
+        date: '2026-07-04',
+        title: 'Beijing-time scheduled jobs',
+        body: 'Scheduling now exposes a clear Beijing-time picker and the backend scheduler runs with Asia/Shanghai.',
+      },
+      {
+        date: '2026-07-04',
+        title: 'Stable account entry',
+        body: 'The sidebar account area now keeps its own fixed footer layer so it does not disappear across long pages or narrow layouts.',
+      },
+    ],
+    roadmapItems: [
+      'Expand full Chinese/English coverage across paper, report, and workflow detail screens.',
+      'Add a schedule calendar, retry policies, execution windows, and holiday skip rules.',
+      'Improve Zotero two-way sync, WeKnora write-back, and collaborative report annotation.',
+      'Add finer theme tokens and density settings for long reading and repeated operations.',
+    ],
+    tabs: [
+      { id: 'preferences', label: 'Preferences', title: 'Language and appearance', desc: 'Theme/lang', intro: 'These browser-level preferences apply immediately.', mark: 'P' },
+      { id: 'ai', label: 'AI', title: 'AI configuration', desc: 'Model/key', intro: 'Configure the compatible API used for relevance, summaries, and reports.', mark: 'AI' },
+      { id: 'email', label: 'Email', title: 'Email configuration', desc: 'SMTP', intro: 'Configure the sender service and default recipient for literature reports.', mark: 'M' },
+      { id: 'webdav', label: 'WebDAV', title: 'WebDAV sync', desc: 'Backup', intro: 'Back up feeds, papers, and analysis results to a remote WebDAV folder.', mark: 'S' },
+      { id: 'weknora', label: 'WeKnora', title: 'WeKnora integration', desc: 'Knowledge', intro: 'Sync reports and high-relevance papers to a WeKnora knowledge base.', mark: 'K' },
+      { id: 'schedule', label: 'Schedule', title: 'Beijing-time schedule', desc: 'Asia/Shanghai', intro: 'Choose the exact Beijing time for the daily workflow.', mark: 'T' },
+      { id: 'changelog', label: 'Changelog', title: 'Changelog and roadmap', desc: 'Roadmap', intro: 'Track this update and the next product directions.', mark: 'C' },
+    ],
+  },
+} as const
+
+const copy = computed(() => copyMap[appStore.language])
+const tabs = computed(() => copy.value.tabs as unknown as Array<{
+  id: TabId
+  label: string
+  title: string
+  desc: string
+  intro: string
+  mark: string
+}>)
+const activeTab = ref<TabId>('preferences')
+const currentTab = computed(() => tabs.value.find(tab => tab.id === activeTab.value))
 const showApiKey = ref(false)
 
-const tabs = [
-  { id: 'ai', label: 'AI 配置' },
-  { id: 'email', label: '邮件配置' },
-  { id: 'webdav', label: 'WebDAV 配置' },
-  { id: 'weknora', label: 'WeKnora 联动' },
-  { id: 'schedule', label: '定时任务' },
-]
-
-// AI
 const aiForm = reactive({
   api_base: '',
   api_key: '',
@@ -442,7 +528,6 @@ const aiForm = reactive({
 const savingAI = ref(false)
 const testingAI = ref(false)
 
-// Email
 const emailForm = reactive({
   smtp_server: '',
   smtp_port: 587,
@@ -455,7 +540,6 @@ const emailForm = reactive({
 const savingEmail = ref(false)
 const testingEmail = ref(false)
 
-// WebDAV
 const webdavForm = reactive({
   url: '',
   username: '',
@@ -465,7 +549,6 @@ const webdavForm = reactive({
 const savingWebDAV = ref(false)
 const testingWebDAV = ref(false)
 
-// WeKnora
 const weknoraForm = reactive({
   enabled: false,
   base_url: 'http://localhost:8080/api/v1',
@@ -478,14 +561,48 @@ const weknoraForm = reactive({
 const savingWeKnora = ref(false)
 const testingWeKnora = ref(false)
 
-// Schedule
 const scheduleForm = reactive({
   cron_hour: 8,
   cron_minute: 0,
+  timezone: 'Asia/Shanghai',
 })
 const savingSchedule = ref(false)
 
-// Load functions
+const scheduleTime = computed({
+  get() {
+    return `${padTime(scheduleForm.cron_hour, 23)}:${padTime(scheduleForm.cron_minute, 59)}`
+  },
+  set(value: string) {
+    const [hour, minute] = value.split(':').map(Number)
+    if (Number.isInteger(hour) && Number.isInteger(minute)) {
+      scheduleForm.cron_hour = clamp(hour, 0, 23)
+      scheduleForm.cron_minute = clamp(minute, 0, 59)
+    }
+  },
+})
+
+const schedulePreview = computed(() => `${scheduleTime.value} ${copy.value.beijingTime}`)
+
+function padTime(value: number, max: number) {
+  return String(clamp(value, 0, max)).padStart(2, '0')
+}
+
+function clamp(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) return min
+  return Math.min(Math.max(Math.trunc(value), min), max)
+}
+
+function normalizeSchedule() {
+  scheduleForm.cron_hour = clamp(scheduleForm.cron_hour, 0, 23)
+  scheduleForm.cron_minute = clamp(scheduleForm.cron_minute, 0, 59)
+  scheduleForm.timezone = 'Asia/Shanghai'
+}
+
+function errorPrefix(action: string) {
+  if (appStore.isEnglish) return `${action} failed: `
+  return `${action}失败: `
+}
+
 async function loadAI() {
   try {
     const { data } = await settingsApi.getAI()
@@ -526,19 +643,19 @@ async function loadSchedule() {
   try {
     const { data } = await settingsApi.getSchedule()
     Object.assign(scheduleForm, data)
+    normalizeSchedule()
   } catch {
-    // use defaults
+    normalizeSchedule()
   }
 }
 
-// Save functions
 async function saveAI() {
   savingAI.value = true
   try {
     await settingsApi.saveAI({ ...aiForm })
-    appStore.success('AI 配置已保存')
+    appStore.success(appStore.isEnglish ? 'AI configuration saved' : 'AI 配置已保存')
   } catch (err: any) {
-    appStore.error('保存失败: ' + err.message)
+    appStore.error(errorPrefix(appStore.isEnglish ? 'Save' : '保存') + err.message)
   } finally {
     savingAI.value = false
   }
@@ -548,9 +665,9 @@ async function saveEmail() {
   savingEmail.value = true
   try {
     await settingsApi.saveEmail({ ...emailForm })
-    appStore.success('邮件配置已保存')
+    appStore.success(appStore.isEnglish ? 'Email configuration saved' : '邮件配置已保存')
   } catch (err: any) {
-    appStore.error('保存失败: ' + err.message)
+    appStore.error(errorPrefix(appStore.isEnglish ? 'Save' : '保存') + err.message)
   } finally {
     savingEmail.value = false
   }
@@ -560,9 +677,9 @@ async function saveWebDAV() {
   savingWebDAV.value = true
   try {
     await settingsApi.saveWebDAV({ ...webdavForm })
-    appStore.success('WebDAV 配置已保存')
+    appStore.success(appStore.isEnglish ? 'WebDAV configuration saved' : 'WebDAV 配置已保存')
   } catch (err: any) {
-    appStore.error('保存失败: ' + err.message)
+    appStore.error(errorPrefix(appStore.isEnglish ? 'Save' : '保存') + err.message)
   } finally {
     savingWebDAV.value = false
   }
@@ -572,9 +689,9 @@ async function saveWeKnora() {
   savingWeKnora.value = true
   try {
     await settingsApi.saveWeKnora({ ...weknoraForm })
-    appStore.success('WeKnora 配置已保存')
+    appStore.success(appStore.isEnglish ? 'WeKnora configuration saved' : 'WeKnora 配置已保存')
   } catch (err: any) {
-    appStore.error('保存失败: ' + err.message)
+    appStore.error(errorPrefix(appStore.isEnglish ? 'Save' : '保存') + err.message)
   } finally {
     savingWeKnora.value = false
   }
@@ -582,24 +699,24 @@ async function saveWeKnora() {
 
 async function saveSchedule() {
   savingSchedule.value = true
+  normalizeSchedule()
   try {
     await settingsApi.saveSchedule({ ...scheduleForm })
-    appStore.success('定时任务配置已保存')
+    appStore.success(appStore.isEnglish ? 'Beijing-time schedule saved' : '北京时间定时任务已保存')
   } catch (err: any) {
-    appStore.error('保存失败: ' + err.message)
+    appStore.error(errorPrefix(appStore.isEnglish ? 'Save' : '保存') + err.message)
   } finally {
     savingSchedule.value = false
   }
 }
 
-// Test functions
 async function testAI() {
   testingAI.value = true
   try {
     await settingsApi.testAI({ ...aiForm })
-    appStore.success('AI 连接测试成功')
+    appStore.success(appStore.isEnglish ? 'AI connection succeeded' : 'AI 连接测试成功')
   } catch (err: any) {
-    appStore.error('连接测试失败: ' + err.message)
+    appStore.error(errorPrefix(appStore.isEnglish ? 'Connection test' : '连接测试') + err.message)
   } finally {
     testingAI.value = false
   }
@@ -609,9 +726,9 @@ async function testEmail() {
   testingEmail.value = true
   try {
     await settingsApi.testEmail({ ...emailForm })
-    appStore.success('测试邮件已发送')
+    appStore.success(appStore.isEnglish ? 'Test email sent' : '测试邮件已发送')
   } catch (err: any) {
-    appStore.error('发送测试邮件失败: ' + err.message)
+    appStore.error(errorPrefix(appStore.isEnglish ? 'Send test email' : '发送测试邮件') + err.message)
   } finally {
     testingEmail.value = false
   }
@@ -621,9 +738,9 @@ async function testWebDAV() {
   testingWebDAV.value = true
   try {
     await settingsApi.testWebDAV({ ...webdavForm })
-    appStore.success('WebDAV 连接测试成功')
+    appStore.success(appStore.isEnglish ? 'WebDAV connection succeeded' : 'WebDAV 连接测试成功')
   } catch (err: any) {
-    appStore.error('连接测试失败: ' + err.message)
+    appStore.error(errorPrefix(appStore.isEnglish ? 'Connection test' : '连接测试') + err.message)
   } finally {
     testingWebDAV.value = false
   }
@@ -633,9 +750,9 @@ async function testWeKnora() {
   testingWeKnora.value = true
   try {
     await settingsApi.testWeKnora({ ...weknoraForm })
-    appStore.success('WeKnora 连接测试成功')
+    appStore.success(appStore.isEnglish ? 'WeKnora connection succeeded' : 'WeKnora 连接测试成功')
   } catch (err: any) {
-    appStore.error('连接测试失败: ' + err.message)
+    appStore.error(errorPrefix(appStore.isEnglish ? 'Connection test' : '连接测试') + err.message)
   } finally {
     testingWeKnora.value = false
   }

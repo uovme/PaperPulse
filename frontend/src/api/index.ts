@@ -272,6 +272,7 @@ export interface WeKnoraSettings {
 export interface ScheduleSettings {
   cron_hour: number
   cron_minute: number
+  timezone: string
 }
 
 export const settingsApi = {
