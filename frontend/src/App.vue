@@ -3,7 +3,7 @@
 
   <div v-else class="paper-shell flex min-h-[100dvh] overflow-hidden">
     <aside :class="['paper-sidebar flex flex-col', appStore.sidebarCollapsed ? 'paper-sidebar-collapsed w-[76px]' : 'w-64']">
-      <div class="flex h-16 items-center gap-3 px-4">
+      <div class="paper-sidebar-brand flex items-center gap-3 px-4">
         <router-link to="/dashboard" class="flex min-w-0 flex-1 items-center gap-3">
           <div class="paper-logo-mark flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl">
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -24,7 +24,7 @@
         </router-link>
       </div>
 
-      <div v-if="workspaceStore.currentWorkspace" class="px-3 pb-3">
+      <div v-if="workspaceStore.currentWorkspace" class="paper-workspace-wrap px-3">
         <div v-if="!appStore.sidebarCollapsed" class="paper-workspace rounded-lg p-2.5">
           <div class="mb-2 flex items-center gap-2 xai-eyebrow">
             <span
@@ -76,7 +76,7 @@
         </button>
       </div>
 
-      <nav class="paper-sidebar-nav flex-1 space-y-1 overflow-y-auto px-3 py-2">
+      <nav class="paper-sidebar-nav flex-1 space-y-1 overflow-y-auto px-3 py-2" aria-label="Primary navigation">
         <router-link
           v-for="item in navItems"
           :key="item.path"
