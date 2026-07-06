@@ -315,7 +315,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { dashboardApi, analysisApi, executionApi, workflowApi } from '@/api'
+import { dashboardApi, analysisApi, executionApi, feedApi, workflowApi } from '@/api'
 import type { DashboardStats, RecentPaper, WorkflowExecution, WorkflowExecutionDetail } from '@/api'
 import { useAppStore } from '@/stores/app'
 import { formatApiDateTime } from '@/utils/datetime'
@@ -623,13 +623,15 @@ function cancelAnalysisExecution() { controlAnalysisExecution('cancel') }
 async function fetchAll() {
   actionLoading.value = true
   try {
-    const { data } = await analysisApi.fetchAndAnalyzeBackground()
-    appStore.success('抓取并分析已开始')
-    await loadExecutions(true)
-    if (data.execution_id) {
-      await loadExecutionDetail(data.execution_id)
-      startProgressPolling(data.execution_id)
-    }
+    const { data } = await feedApi.fetchAll()
+    appStore.success(
+      appStore.isEnglish
+        ? `Refresh complete: ${data.feed_count} feeds, ${data.new_papers} new papers`
+        : `全部刷新完成：${data.feed_count} 个订阅源，新增 ${data.new_papers} 篇论文`
+    )
+    await loadStats()
+    await loadRecentPapers()
+    await loadChartData()
   } catch (err: any) {
     appStore.error('操作失败: ' + err.message)
   } finally {

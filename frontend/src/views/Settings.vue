@@ -207,6 +207,9 @@
             <button class="xai-btn" type="button" :disabled="testingWebDAV" @click="testWebDAV">
               {{ testingWebDAV ? copy.testing : copy.testConnection }}
             </button>
+            <button class="xai-btn" type="button" :disabled="backingUpWebDAV" @click="backupWebDAV">
+              {{ backingUpWebDAV ? copy.backingUp : copy.backupNow }}
+            </button>
           </div>
         </div>
 
@@ -356,9 +359,16 @@ const copyMap = {
     saving: '保存中...',
     testConnection: '测试连接',
     testing: '测试中...',
+    backupNow: '立即备份',
+    backingUp: '备份中...',
     sendTestEmail: '发送测试邮件',
     roadmapTitle: '日后功能方向',
     changelogItems: [
+      {
+        date: '2026-07-06',
+        title: '备份与抓取口径优化',
+        body: 'WebDAV 增加立即备份入口，仪表盘“抓取全部订阅”只执行 RSS 抓取，论文列表补充抓取/更新时间。',
+      },
       {
         date: '2026-07-04',
         title: 'UI 与偏好系统统一',
@@ -432,9 +442,16 @@ const copyMap = {
     saving: 'Saving...',
     testConnection: 'Test connection',
     testing: 'Testing...',
+    backupNow: 'Back up now',
+    backingUp: 'Backing up...',
     sendTestEmail: 'Send test email',
     roadmapTitle: 'Roadmap',
     changelogItems: [
+      {
+        date: '2026-07-06',
+        title: 'Backup and fetch behavior updates',
+        body: 'WebDAV now supports manual backup, dashboard feed refresh only fetches RSS updates, and paper cards show their fetched/updated time.',
+      },
       {
         date: '2026-07-04',
         title: 'Unified UI and preferences',
@@ -512,6 +529,7 @@ const webdavForm = reactive({
 })
 const savingWebDAV = ref(false)
 const testingWebDAV = ref(false)
+const backingUpWebDAV = ref(false)
 
 const weknoraForm = reactive({
   enabled: false,
@@ -707,6 +725,18 @@ async function testWebDAV() {
     appStore.error(errorPrefix(appStore.isEnglish ? 'Connection test' : '连接测试') + err.message)
   } finally {
     testingWebDAV.value = false
+  }
+}
+
+async function backupWebDAV() {
+  backingUpWebDAV.value = true
+  try {
+    await settingsApi.backupWebDAV()
+    appStore.success(appStore.isEnglish ? 'WebDAV backup completed' : 'WebDAV 备份完成')
+  } catch (err: any) {
+    appStore.error(errorPrefix(appStore.isEnglish ? 'Backup' : '备份') + err.message)
+  } finally {
+    backingUpWebDAV.value = false
   }
 }
 

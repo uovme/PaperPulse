@@ -5,10 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..database import get_db
-from ..models import Setting
+from ..dependencies import get_current_workspace
+from ..models import Setting, Workspace
 from ..schemas import AIConfig, EmailConfig, WebDAVConfig, WeKnoraConfig, ScheduleConfig
 from ..services.ai_analyzer import build_ai_request, DEFAULT_AI_CONFIG
 from ..services.email_sender import open_smtp_connection
+from ..services.webdav_sync import export_data
 from ..services.weknora_client import WeKnoraClient
 from ..crypto import encrypt_value, decrypt_value
 
@@ -202,6 +204,17 @@ async def test_webdav_config(data: WebDAVConfig | None = None, db: AsyncSession 
         raise HTTPException(400, f"WebDAV 连接失败: {exc}") from exc
 
     return {"success": True, "path_exists": exists}
+
+
+@router.post("/webdav/backup")
+async def backup_webdav(
+    db: AsyncSession = Depends(get_db),
+    workspace: Workspace = Depends(get_current_workspace),
+):
+    exported = await export_data(db, workspace_id=workspace.id)
+    if not exported:
+        raise HTTPException(400, "WebDAV 备份失败，请检查配置")
+    return {"success": True}
 
 
 @router.post("/weknora/test")

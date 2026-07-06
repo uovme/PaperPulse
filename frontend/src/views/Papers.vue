@@ -88,6 +88,12 @@
                 </svg>
                 {{ paper.published_at }}
               </span>
+              <span class="paper-meta-item">
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {{ appStore.isEnglish ? 'Updated:' : '更新：' }} {{ formatDateTime(paper.fetched_at) }}
+              </span>
             </div>
             <p class="mt-3 line-clamp-2 text-sm leading-6 text-[var(--xai-body)]">
               {{ paper.abstract }}
@@ -183,6 +189,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { paperApi, feedApi } from '@/api'
 import type { Paper } from '@/api'
 import { useAppStore } from '@/stores/app'
+import { formatApiDateTime } from '@/utils/datetime'
 
 const appStore = useAppStore()
 
@@ -221,6 +228,10 @@ function scoreBadgeClass(score: number | null): string {
 
 function formatScore(score: number | null): string {
   return typeof score === 'number' ? score.toFixed(1) : '未分析'
+}
+
+function formatDateTime(value: string | null): string {
+  return formatApiDateTime(value)
 }
 
 const paginationRange = computed(() => {

@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from ..crypto import decrypt_value
 from ..models import AnalysisResult, Feed, Keyword, Paper, Setting
 
 logger = logging.getLogger(__name__)
@@ -12,7 +13,10 @@ async def get_webdav_config(db: AsyncSession) -> dict:
     result = await db.execute(select(Setting).where(Setting.key == "webdav_config"))
     row = result.scalar_one_or_none()
     if row:
-        return json.loads(row.value)
+        config = json.loads(row.value)
+        if config.get("password"):
+            config["password"] = decrypt_value(config["password"])
+        return config
     return {}
 
 

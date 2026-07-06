@@ -285,6 +285,7 @@ export const settingsApi = {
   getWebDAV: () => api.get<WebDAVSettings>('/settings/webdav'),
   saveWebDAV: (data: WebDAVSettings) => api.put('/settings/webdav', data),
   testWebDAV: (data: WebDAVSettings) => api.post('/settings/webdav/test', data),
+  backupWebDAV: () => api.post<{ success: boolean }>('/settings/webdav/backup'),
   getWeKnora: () => api.get<WeKnoraSettings>('/settings/weknora'),
   saveWeKnora: (data: WeKnoraSettings) => api.put('/settings/weknora', data),
   testWeKnora: (data: WeKnoraSettings) => api.post('/settings/weknora/test', data),
