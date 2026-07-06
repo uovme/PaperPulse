@@ -10,9 +10,21 @@ from .nodes.fetch_rss import FetchRssNode
 from .nodes.webdav_backup import WebdavBackupNode
 from .nodes.weknora_sync import WeKnoraSyncNode
 
+DAILY_ANALYSIS_WINDOW_HOURS = 24
 
-async def run_analysis_workflow(db: AsyncSession, workspace_id: int = 1) -> WorkflowExecution:
-    return await WorkflowEngine(db).run("manual-analysis", [AiAnalyzeNode(), EmailReportNode()], workspace_id=workspace_id)
+async def run_analysis_workflow(
+    db: AsyncSession,
+    workspace_id: int = 1,
+    analysis_window_hours: int | None = None,
+) -> WorkflowExecution:
+    return await WorkflowEngine(db).run(
+        "manual-analysis",
+        [
+            AiAnalyzeNode(analysis_window_hours=analysis_window_hours, prefer_fetched_papers=analysis_window_hours is None),
+            EmailReportNode(report_window_hours=analysis_window_hours),
+        ],
+        workspace_id=workspace_id,
+    )
 
 
 async def run_fetch_analyze_workflow(db: AsyncSession, workspace_id: int = 1) -> WorkflowExecution:
@@ -30,7 +42,14 @@ async def run_send_report_workflow(db: AsyncSession, workspace_id: int = 1) -> W
 async def run_daily_workflow(db: AsyncSession, workspace_id: int = 1) -> WorkflowExecution:
     return await WorkflowEngine(db).run(
         "daily-paperpulse",
-        [FetchRssNode(), EnrichAbstractsNode(), AiAnalyzeNode(), EmailReportNode(), WeKnoraSyncNode(), WebdavBackupNode()],
+        [
+            FetchRssNode(),
+            EnrichAbstractsNode(),
+            AiAnalyzeNode(analysis_window_hours=DAILY_ANALYSIS_WINDOW_HOURS, prefer_fetched_papers=False),
+            EmailReportNode(report_window_hours=DAILY_ANALYSIS_WINDOW_HOURS),
+            WeKnoraSyncNode(),
+            WebdavBackupNode(),
+        ],
         workspace_id=workspace_id,
     )
 
@@ -47,10 +66,17 @@ def analysis_initial_summary() -> dict:
     }
 
 
-async def create_analysis_workflow_execution(db: AsyncSession, workspace_id: int = 1) -> WorkflowExecution:
+async def create_analysis_workflow_execution(
+    db: AsyncSession,
+    workspace_id: int = 1,
+    analysis_window_hours: int | None = None,
+) -> WorkflowExecution:
+    summary = analysis_initial_summary()
+    if analysis_window_hours is not None:
+        summary["analysis_window_hours"] = int(analysis_window_hours)
     return await WorkflowEngine(db).create_execution(
         "manual-analysis",
-        analysis_initial_summary(),
+        summary,
         workspace_id=workspace_id,
     )
 

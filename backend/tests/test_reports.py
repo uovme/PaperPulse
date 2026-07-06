@@ -3,7 +3,7 @@ import os
 import sys
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -163,6 +163,54 @@ class ReportCenterTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(1, report.paper_count)
             self.assertIn("Current matching paper", report.markdown)
             self.assertNotIn("Old matching paper", report.markdown)
+
+    async def test_create_report_can_scope_items_to_recently_fetched_window(self):
+        async with SessionLocal() as db:
+            keyword = Keyword(word="alloy", enabled=True)
+            now = datetime.now(timezone.utc)
+            old_paper = Paper(
+                title="Old fetched matching paper",
+                url="https://example.test/old-window",
+                fetched_at=now - timedelta(hours=30),
+            )
+            recent_paper = Paper(
+                title="Recent fetched matching paper",
+                url="https://example.test/recent-window",
+                fetched_at=now - timedelta(hours=2),
+            )
+            db.add_all([keyword, old_paper, recent_paper])
+            await db.commit()
+            await db.refresh(keyword)
+            await db.refresh(old_paper)
+            await db.refresh(recent_paper)
+
+            db.add_all([
+                AnalysisResult(
+                    paper_id=old_paper.id,
+                    keyword_id=keyword.id,
+                    relevance_score=9.0,
+                    summary="Old high score",
+                    analyzed_at=now,
+                ),
+                AnalysisResult(
+                    paper_id=recent_paper.id,
+                    keyword_id=keyword.id,
+                    relevance_score=6.0,
+                    summary="Recent workflow score",
+                    analyzed_at=now,
+                ),
+            ])
+            await db.commit()
+
+            report = await create_report_from_recent_analyses(
+                db,
+                source="unit-test",
+                paper_since=now - timedelta(hours=24),
+            )
+
+            self.assertEqual(1, report.paper_count)
+            self.assertIn("Recent fetched matching paper", report.markdown)
+            self.assertNotIn("Old fetched matching paper", report.markdown)
 
     async def test_report_includes_low_quality_positive_score_items(self):
         async with SessionLocal() as db:

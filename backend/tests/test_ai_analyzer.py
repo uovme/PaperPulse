@@ -5,6 +5,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from sqlalchemy import select
+
 
 TEST_DIR = tempfile.TemporaryDirectory()
 os.environ["DB_PATH"] = str(Path(TEST_DIR.name) / "paperpulse-ai-test.db")
@@ -12,12 +14,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.services.ai_analyzer import (
     analyze_paper,
+    analyze_papers_batch,
     build_ai_request,
     extract_response_text,
     request_chat_completion,
 )
 from app.database import Base, SessionLocal, engine
-from app.models import Keyword, Paper
+from app.models import AnalysisResult, Keyword, Paper
 
 
 class AiAnalyzerTest(unittest.IsolatedAsyncioTestCase):
@@ -151,6 +154,44 @@ class AiAnalyzerTest(unittest.IsolatedAsyncioTestCase):
 
                 self.assertEqual(1, len(results))
                 self.assertEqual(alloy.id, results[0].keyword_id)
+
+    async def test_batch_analysis_persists_zero_score_records_for_unmatched_papers(self):
+        async def fake_request_chat_completion(config, messages, max_tokens=500):
+            return '''
+            [
+              {"index": 0, "relevance_score": 0, "matched_keywords": [], "summary": "与研究方向无关"},
+              {"index": 1, "relevance_score": 8, "matched_keywords": ["alloy"], "summary": "相关"}
+            ]
+            '''
+
+        with patch("app.services.ai_analyzer.request_chat_completion", fake_request_chat_completion):
+            async with SessionLocal() as db:
+                alloy = Keyword(word="alloy", enabled=True)
+                papers = [
+                    Paper(title="Unrelated microscopy note", abstract="No target topic here."),
+                    Paper(title="Alloy fatigue paper", abstract="This paper studies alloys."),
+                ]
+                db.add_all([alloy, *papers])
+                await db.commit()
+                await db.refresh(alloy)
+                for paper in papers:
+                    await db.refresh(paper)
+
+                results = await analyze_papers_batch(
+                    db,
+                    papers,
+                    [alloy],
+                    {"enabled": True, "api_key": "test-key", "api_base": "http://ai.test"},
+                    raise_errors=True,
+                )
+
+                rows = (await db.execute(select(AnalysisResult).order_by(AnalysisResult.paper_id))).scalars().all()
+
+        self.assertEqual(2, len(results))
+        self.assertEqual(2, len(rows))
+        self.assertEqual(0.0, rows[0].relevance_score)
+        self.assertEqual("与研究方向无关", rows[0].summary)
+        self.assertEqual(8.0, rows[1].relevance_score)
 
 
 if __name__ == "__main__":

@@ -48,6 +48,7 @@ async def collect_recent_report_items(
     db: AsyncSession,
     *,
     paper_ids: list[int] | None = None,
+    paper_since: datetime | None = None,
     workspace_id: int = 1,
     topic_rule: EmailTopicRule | None = None,
 ) -> list[dict]:
@@ -64,7 +65,10 @@ async def collect_recent_report_items(
         .order_by(desc(AnalysisResult.relevance_score), desc(AnalysisResult.analyzed_at))
     )
     if paper_ids is None:
-        query = query.where(AnalysisResult.analyzed_at >= today)
+        if paper_since is not None:
+            query = query.where(Paper.fetched_at >= paper_since)
+        else:
+            query = query.where(AnalysisResult.analyzed_at >= today)
     elif not paper_ids:
         return []
     else:
@@ -117,6 +121,7 @@ async def create_report_from_recent_analyses(
     *,
     source: str = "manual",
     paper_ids: list[int] | None = None,
+    paper_since: datetime | None = None,
     analyzed_count: int | None = None,
     related_count: int | None = None,
     workspace_id: int = 1,
@@ -125,6 +130,7 @@ async def create_report_from_recent_analyses(
     items = await collect_recent_report_items(
         db,
         paper_ids=paper_ids,
+        paper_since=paper_since,
         workspace_id=workspace_id,
         topic_rule=topic_rule,
     )
@@ -243,6 +249,7 @@ async def create_and_send_recent_report(
     source: str = "manual",
     *,
     paper_ids: list[int] | None = None,
+    paper_since: datetime | None = None,
     analyzed_count: int | None = None,
     related_count: int | None = None,
     workspace_id: int = 1,
@@ -262,6 +269,7 @@ async def create_and_send_recent_report(
                 db,
                 source=source,
                 paper_ids=paper_ids,
+                paper_since=paper_since,
                 analyzed_count=analyzed_count,
                 related_count=related_count,
                 workspace_id=workspace_id,
@@ -299,6 +307,7 @@ async def create_and_send_recent_report(
         db,
         source=source,
         paper_ids=paper_ids,
+        paper_since=paper_since,
         analyzed_count=analyzed_count,
         related_count=related_count,
         workspace_id=workspace_id,

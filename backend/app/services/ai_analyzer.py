@@ -6,6 +6,7 @@ import logging
 import os
 import re
 from collections.abc import Awaitable, Callable
+from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..models import Paper, Keyword, AnalysisResult, Setting
@@ -342,6 +343,7 @@ Respond ONLY with the JSON array."""
             parsed = _AnalysisResponse.from_raw(item)
             paper = papers[idx]
             matched_normalized = {m.lower() for m in parsed.matched}
+            paper_results = []
             for kw in keywords:
                 if kw.word.strip().lower() in matched_normalized:
                     ar = AnalysisResult(
@@ -350,7 +352,20 @@ Respond ONLY with the JSON array."""
                         relevance_score=parsed.score, summary=parsed.summary,
                     )
                     db.add(ar)
-                    all_results.append(ar)
+                    paper_results.append(ar)
+
+            if not paper_results and keywords:
+                ar = AnalysisResult(
+                    paper_id=paper.id,
+                    keyword_id=keywords[0].id,
+                    workspace_id=paper.workspace_id,
+                    relevance_score=0.0,
+                    summary=parsed.summary or "与研究方向无关",
+                )
+                db.add(ar)
+                paper_results.append(ar)
+
+            all_results.extend(paper_results)
         except (TypeError, ValueError, KeyError):
             continue
 
@@ -365,6 +380,7 @@ async def analyze_new_papers(
     control_callback: AnalysisControlCallback | None = None,
     *,
     paper_ids: list[int] | None = None,
+    fetched_since: datetime | None = None,
     workspace_id: int | None = None,
     raise_errors: bool = False,
 ) -> list[AnalysisResult]:
@@ -389,10 +405,9 @@ async def analyze_new_papers(
             raise RuntimeError(message)
         return []
 
-    # Get papers without analysis. Fetch/analyze workflows pass paper_ids so
-    # progress total tracks only the papers fetched in the current run.
-    # Manual analysis uses the latest persisted fetch batch when available.
-    if paper_ids is None:
+    # Get papers without analysis. Fetch/analyze workflows can pass paper_ids,
+    # while scheduled/manual windowed analysis uses fetched_since.
+    if paper_ids is None and fetched_since is None:
         paper_ids = await get_latest_fetched_paper_ids(db, workspace_id=workspace_id)
 
     analyzed_ids = select(AnalysisResult.paper_id).where(AnalysisResult.status == "success").distinct()
@@ -401,6 +416,8 @@ async def analyze_new_papers(
     paper_query = select(Paper).where(~Paper.id.in_(analyzed_ids))
     if workspace_id is not None:
         paper_query = paper_query.where(Paper.workspace_id == workspace_id)
+    if fetched_since is not None:
+        paper_query = paper_query.where(Paper.fetched_at >= fetched_since)
     if paper_ids is not None:
         if not paper_ids:
             papers = []

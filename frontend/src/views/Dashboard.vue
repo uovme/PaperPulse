@@ -15,6 +15,16 @@
         <button @click="fetchAll" :disabled="actionLoading || analysisRunning" class="xai-btn">
           抓取全部订阅
         </button>
+        <label class="flex items-center gap-2 text-sm text-[var(--xai-mute)]">
+          <span>分析范围</span>
+          <select v-model.number="analysisWindowHours" class="bg-[var(--xai-canvas-soft)] border border-[var(--xai-hairline)] rounded-lg px-2 py-2 text-[var(--xai-ink)]">
+            <option :value="24">前24小时</option>
+            <option :value="72">前3天</option>
+            <option :value="168">前7天</option>
+            <option :value="336">前14天</option>
+            <option :value="0">全部未分析</option>
+          </select>
+        </label>
         <button @click="runAnalysis" :disabled="actionLoading || analysisRunning" class="xai-btn">
           运行分析
         </button>
@@ -340,6 +350,7 @@ const detailLoading = ref(false)
 const actionLoading = ref(false)
 const controlLoading = ref(false)
 const chartData = ref<any>(null)
+const analysisWindowHours = ref(24)
 const reanalyzeDays = ref(1)
 const workflowLogExpanded = ref(false)
 const workflowDetailExpanded = ref(false)
@@ -642,7 +653,7 @@ async function fetchAll() {
 async function runAnalysis() {
   actionLoading.value = true
   try {
-    const { data } = await analysisApi.runBackground()
+    const { data } = await analysisApi.runBackground(analysisWindowHours.value)
     appStore.success('文献汇总分析已开始')
     await loadExecutions(true)
     if (data.execution_id) {

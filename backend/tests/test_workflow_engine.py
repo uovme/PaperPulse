@@ -4,6 +4,7 @@ import os
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 
@@ -141,7 +142,12 @@ class WorkflowEngineTest(unittest.IsolatedAsyncioTestCase):
         original_request = ai_analyzer.request_chat_completion
 
         async def fake_request_chat_completion(config, messages, max_tokens=500):
-            return '{"relevance_score": 7, "matched_keywords": ["battery"], "summary": "相关"}'
+            return '''
+            [
+              {"index": 0, "relevance_score": 7, "matched_keywords": ["battery"], "summary": "相关"},
+              {"index": 1, "relevance_score": 7, "matched_keywords": ["battery"], "summary": "相关"}
+            ]
+            '''
 
         ai_analyzer.request_chat_completion = fake_request_chat_completion
         try:
@@ -186,7 +192,7 @@ class WorkflowEngineTest(unittest.IsolatedAsyncioTestCase):
         original_request = ai_analyzer.request_chat_completion
 
         async def fake_request_chat_completion(config, messages, max_tokens=500):
-            return '{"relevance_score": 7, "matched_keywords": ["battery"], "summary": "相关"}'
+            return '[{"index": 0, "relevance_score": 7, "matched_keywords": ["battery"], "summary": "相关"}]'
 
         ai_analyzer.request_chat_completion = fake_request_chat_completion
         try:
@@ -237,6 +243,59 @@ class WorkflowEngineTest(unittest.IsolatedAsyncioTestCase):
         finally:
             ai_analyzer.request_chat_completion = original_request
 
+    async def test_analyze_new_papers_can_limit_to_fetched_since_window(self):
+        original_request = ai_analyzer.request_chat_completion
+
+        async def fake_request_chat_completion(config, messages, max_tokens=500):
+            return '''
+            [
+              {"index": 0, "relevance_score": 7, "matched_keywords": ["battery"], "summary": "相关"},
+              {"index": 1, "relevance_score": 7, "matched_keywords": ["battery"], "summary": "相关"}
+            ]
+            '''
+
+        ai_analyzer.request_chat_completion = fake_request_chat_completion
+        try:
+            async with SessionLocal() as db:
+                db.add(Setting(
+                    key="ai_config",
+                    value=json.dumps({"enabled": True, "api_key": "test-key", "api_base": "http://ai.test"}),
+                ))
+                db.add(Keyword(word="battery", enabled=True))
+                now = datetime.now(timezone.utc)
+                recent = Paper(
+                    title="Recent fetched paper",
+                    url="https://example.com/recent",
+                    fetched_at=now - timedelta(hours=2),
+                )
+                old = Paper(
+                    title="Old fetched paper",
+                    url="https://example.com/old",
+                    fetched_at=now - timedelta(hours=30),
+                )
+                db.add_all([recent, old])
+                await db.commit()
+                await db.refresh(recent)
+                await db.refresh(old)
+
+                progress_events = []
+
+                async def on_progress(progress):
+                    progress_events.append(progress)
+
+                results = await analyze_new_papers(
+                    db,
+                    progress_callback=on_progress,
+                    fetched_since=now - timedelta(hours=24),
+                    raise_errors=True,
+                )
+
+                self.assertEqual(1, len(results))
+                self.assertEqual(recent.id, results[0].paper_id)
+                self.assertEqual(1, progress_events[0]["analysis_total"])
+        finally:
+            ai_analyzer.request_chat_completion = original_request
+
     async def test_ai_analyze_node_passes_fetched_paper_ids_to_analyzer(self):
         original_analyze = ai_analyze_node_module.analyze_new_papers
         captured = {}
@@ -249,6 +308,7 @@ class WorkflowEngineTest(unittest.IsolatedAsyncioTestCase):
             raise_errors=False,
             paper_ids=None,
             workspace_id=None,
+            fetched_since=None,
         ):
             captured["paper_ids"] = paper_ids
             captured["workspace_id"] = workspace_id
@@ -280,6 +340,53 @@ class WorkflowEngineTest(unittest.IsolatedAsyncioTestCase):
         finally:
             ai_analyze_node_module.analyze_new_papers = original_analyze
 
+    async def test_ai_analyze_node_window_uses_fetched_since_instead_of_current_fetch_ids(self):
+        original_analyze = ai_analyze_node_module.analyze_new_papers
+        captured = {}
+
+        async def fake_analyze_new_papers(
+            db,
+            progress_callback=None,
+            control_callback=None,
+            *,
+            raise_errors=False,
+            paper_ids=None,
+            workspace_id=None,
+            fetched_since=None,
+        ):
+            captured["paper_ids"] = paper_ids
+            captured["workspace_id"] = workspace_id
+            captured["fetched_since"] = fetched_since
+            if progress_callback:
+                await progress_callback({
+                    "analysis_total": 0,
+                    "analysis_analyzed": 0,
+                    "analysis_related": 0,
+                    "analysis_results": 0,
+                    "analysis_current_title": "",
+                })
+            return []
+
+        ai_analyze_node_module.analyze_new_papers = fake_analyze_new_papers
+        try:
+            async with SessionLocal() as db:
+                execution = WorkflowExecution(workflow_name="unit-ai-window-node", status="running")
+                db.add(execution)
+                await db.commit()
+                await db.refresh(execution)
+
+                context = WorkflowContext(db, execution)
+                context.state["fetched_paper_ids"] = []
+
+                await AiAnalyzeNode(analysis_window_hours=24, prefer_fetched_papers=False).run(context)
+
+                self.assertIsNone(captured["paper_ids"])
+                self.assertEqual(1, captured["workspace_id"])
+                self.assertIsNotNone(captured["fetched_since"])
+                self.assertLess(datetime.now(timezone.utc) - captured["fetched_since"], timedelta(hours=25))
+        finally:
+            ai_analyze_node_module.analyze_new_papers = original_analyze
+
     async def test_email_report_node_scopes_report_to_fetched_paper_ids(self):
         original_send = email_report_node_module.send_daily_report
         captured = {}
@@ -288,6 +395,7 @@ class WorkflowEngineTest(unittest.IsolatedAsyncioTestCase):
             db,
             *,
             paper_ids=None,
+            paper_since=None,
             analyzed_count=None,
             related_count=None,
             workspace_id=1,
@@ -328,6 +436,50 @@ class WorkflowEngineTest(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(1, captured["related_count"])
                 self.assertEqual(1, captured["workspace_id"])
                 self.assertEqual(1, context.summary["email_paper_count"])
+        finally:
+            email_report_node_module.send_daily_report = original_send
+
+    async def test_email_report_node_window_uses_paper_since_instead_of_empty_fetch_ids(self):
+        original_send = email_report_node_module.send_daily_report
+        captured = {}
+
+        async def fake_send_daily_report(
+            db,
+            *,
+            paper_ids=None,
+            analyzed_count=None,
+            related_count=None,
+            workspace_id=1,
+            paper_since=None,
+        ):
+            captured["paper_ids"] = paper_ids
+            captured["paper_since"] = paper_since
+            captured["workspace_id"] = workspace_id
+            return {
+                "report_id": 123,
+                "sent": False,
+                "skipped": True,
+                "reason": "none",
+                "paper_count": 0,
+                "delivery_id": None,
+            }
+
+        email_report_node_module.send_daily_report = fake_send_daily_report
+        try:
+            async with SessionLocal() as db:
+                execution = WorkflowExecution(workflow_name="unit-email-window-node", status="running")
+                db.add(execution)
+                await db.commit()
+                await db.refresh(execution)
+
+                context = WorkflowContext(db, execution)
+                context.state["fetched_paper_ids"] = []
+
+                await EmailReportNode(report_window_hours=24).run(context)
+
+                self.assertIsNone(captured["paper_ids"])
+                self.assertIsNotNone(captured["paper_since"])
+                self.assertEqual(1, captured["workspace_id"])
         finally:
             email_report_node_module.send_daily_report = original_send
 

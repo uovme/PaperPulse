@@ -312,8 +312,9 @@ export interface Analysis {
 export const analysisApi = {
   list: (params?: { page?: number; page_size?: number; min_score?: number; keyword_id?: number; keyword?: string }) =>
     api.get<PaginatedResponse<Analysis>>('/analysis', { params }),
-  run: () => api.post('/analysis/run'),
-  runBackground: () => api.post('/analysis/run-background'),
+  run: (hours?: number) => api.post('/analysis/run', null, { params: hours === undefined ? undefined : { hours } }),
+  runBackground: (hours?: number) =>
+    api.post('/analysis/run-background', null, { params: hours === undefined ? undefined : { hours } }),
   reanalyze: (days: number) => api.post('/analysis/reanalyze', null, { params: { days } }),
   fetchAndAnalyze: () => api.post('/analysis/fetch-and-analyze'),
   fetchAndAnalyzeBackground: () => api.post('/analysis/fetch-and-analyze-background'),

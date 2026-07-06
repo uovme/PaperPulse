@@ -89,10 +89,11 @@ async def list_analyses(
 
 @router.post("/run")
 async def run_analysis(
+    hours: Optional[int] = Query(None, ge=0, le=24 * 90),
     db: AsyncSession = Depends(get_db),
     workspace: Workspace = Depends(get_current_workspace),
 ):
-    execution = await run_analysis_workflow(db, workspace_id=workspace.id)
+    execution = await run_analysis_workflow(db, workspace_id=workspace.id, analysis_window_hours=hours)
     summary = execution.summary_dict
     return {
         "success": execution.status == "success",
@@ -107,10 +108,15 @@ async def run_analysis(
 async def run_analysis_background(
     request: Request,
     background_tasks: BackgroundTasks,
+    hours: Optional[int] = Query(None, ge=0, le=24 * 90),
     db: AsyncSession = Depends(get_db),
     workspace: Workspace = Depends(get_current_workspace),
 ):
-    execution = await create_analysis_workflow_execution(db, workspace_id=workspace.id)
+    execution = await create_analysis_workflow_execution(
+        db,
+        workspace_id=workspace.id,
+        analysis_window_hours=hours,
+    )
     background_tasks.add_task(run_analysis_workflow_execution, execution.id)
     return {
         "success": True,

@@ -30,6 +30,12 @@ const zhToEn: Record<string, string> = {
 
   '快捷操作': 'Quick Actions',
   '抓取全部订阅': 'Fetch all feeds',
+  '分析范围': 'Analysis range',
+  '前24小时': 'Past 24 hours',
+  '前3天': 'Past 3 days',
+  '前7天': 'Past 7 days',
+  '前14天': 'Past 14 days',
+  '全部未分析': 'All unanalyzed',
   '运行分析': 'Run analysis',
   '发送报告': 'Send report',
   '一键抓取并分析': 'Fetch and analyze',
