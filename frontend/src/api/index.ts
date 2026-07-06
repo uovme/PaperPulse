@@ -109,7 +109,8 @@ export const feedApi = {
   update: (id: number, data: FeedUpdate) => api.put<Feed>(`/feeds/${id}`, data),
   delete: (id: number) => api.delete(`/feeds/${id}`),
   fetch: (id: number) => api.post(`/feeds/${id}/fetch`),
-  fetchAll: () => api.post<FeedFetchAllResult>('/feeds/fetch-all'),
+  fetchAll: (hours?: number) =>
+    api.post<FeedFetchAllResult>('/feeds/fetch-all', null, { params: hours === undefined ? undefined : { hours } }),
   bulkDelete: (ids: number[]) => api.post('/feeds/bulk-delete', { ids }),
 }
 

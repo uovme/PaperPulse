@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import datetime, timedelta, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..database import get_db
@@ -52,9 +54,11 @@ async def create_feed(
 
 @router.post("/fetch-all")
 async def fetch_all_enabled_feeds(
+    hours: int | None = Query(None, ge=0, le=24 * 90),
     db: AsyncSession = Depends(get_db),
     workspace: Workspace = Depends(get_current_workspace),
 ):
+    published_since = datetime.now(timezone.utc) - timedelta(hours=hours) if hours and hours > 0 else None
     result = await db.execute(
         select(Feed)
         .where(Feed.enabled == True, Feed.workspace_id == workspace.id)
@@ -65,7 +69,7 @@ async def fetch_all_enabled_feeds(
     per_feed = []
 
     for feed in feeds:
-        papers = await fetch_feed(db, feed)
+        papers = await fetch_feed(db, feed, published_since=published_since)
         all_papers.extend(papers)
         per_feed.append({
             "feed_id": feed.id,
@@ -152,14 +156,16 @@ async def delete_feed(
 @router.post("/{feed_id}/fetch")
 async def fetch_single_feed(
     feed_id: int,
+    hours: int | None = Query(None, ge=0, le=24 * 90),
     db: AsyncSession = Depends(get_db),
     workspace: Workspace = Depends(get_current_workspace),
 ):
+    published_since = datetime.now(timezone.utc) - timedelta(hours=hours) if hours and hours > 0 else None
     result = await db.execute(select(Feed).where(Feed.id == feed_id, Feed.workspace_id == workspace.id))
     feed = result.scalar_one_or_none()
     if not feed:
         raise HTTPException(404, "Feed not found")
-    papers = await fetch_feed(db, feed)
+    papers = await fetch_feed(db, feed, published_since=published_since)
     paper_ids = [paper.id for paper in papers if paper.id is not None]
     await save_latest_fetched_paper_ids(db, paper_ids, workspace_id=workspace.id)
     return {"success": True, "new_papers": len(papers), "paper_ids": paper_ids}

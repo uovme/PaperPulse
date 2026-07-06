@@ -117,7 +117,7 @@ def extract_abstract(entry) -> str:
     return ""
 
 
-async def fetch_feed(db: AsyncSession, feed: Feed) -> list[Paper]:
+async def fetch_feed(db: AsyncSession, feed: Feed, published_since: datetime | None = None) -> list[Paper]:
     try:
         parsed = feedparser.parse(feed.url)
     except Exception as e:
@@ -130,6 +130,11 @@ async def fetch_feed(db: AsyncSession, feed: Feed) -> list[Paper]:
         raw_link = getattr(entry, "link", "") or ""
         link = normalize_paper_url(raw_link)
         title = clean_text(getattr(entry, "title", "Untitled")) or "Untitled"
+        published_at = parse_date(entry)
+
+        if published_since is not None:
+            if not published_at or published_at < published_since:
+                continue
 
         # Deduplicate by DOI or URL or title_hash
         if doi:
@@ -170,7 +175,7 @@ async def fetch_feed(db: AsyncSession, feed: Feed) -> list[Paper]:
             abstract=abstract,
             doi=doi or None,
             url=link,
-            published_at=parse_date(entry),
+            published_at=published_at,
         )
         db.add(paper)
         new_papers.append(paper)
@@ -232,7 +237,11 @@ async def get_latest_fetched_paper_ids(db: AsyncSession, workspace_id: int | Non
     return ids
 
 
-async def fetch_all_feeds(db: AsyncSession, workspace_id: int | None = None) -> list[Paper]:
+async def fetch_all_feeds(
+    db: AsyncSession,
+    workspace_id: int | None = None,
+    published_since: datetime | None = None,
+) -> list[Paper]:
     query = select(Feed).where(Feed.enabled == True)
     if workspace_id is not None:
         query = query.where(Feed.workspace_id == workspace_id)
@@ -240,7 +249,7 @@ async def fetch_all_feeds(db: AsyncSession, workspace_id: int | None = None) -> 
     feeds = result.scalars().all()
     all_papers = []
     for feed in feeds:
-        papers = await fetch_feed(db, feed)
+        papers = await fetch_feed(db, feed, published_since=published_since)
         all_papers.extend(papers)
     await save_latest_fetched_paper_ids(
         db,

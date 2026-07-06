@@ -2,6 +2,7 @@ import os
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -76,3 +77,31 @@ class RssFetcherDatabaseTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual([], papers)
             await db.refresh(feed)
             self.assertIsNotNone(feed.last_fetched)
+
+    async def test_fetch_feed_with_published_since_skips_older_entries(self):
+        async with SessionLocal() as db:
+            feed = Feed(name="Windowed feed", url="https://example.test/window.xml", enabled=True)
+            db.add(feed)
+            await db.commit()
+            await db.refresh(feed)
+
+            now = datetime.now(timezone.utc)
+            parsed = SimpleNamespace(
+                entries=[
+                    SimpleNamespace(
+                        title="Old paper",
+                        link="https://example.test/old-paper",
+                        published_parsed=(now - timedelta(days=5)).timetuple(),
+                    ),
+                    SimpleNamespace(
+                        title="Recent paper",
+                        link="https://example.test/recent-paper",
+                        published_parsed=(now - timedelta(days=1)).timetuple(),
+                    ),
+                ]
+            )
+
+            with patch("app.services.rss_fetcher.feedparser.parse", return_value=parsed):
+                papers = await fetch_feed(db, feed, published_since=now - timedelta(days=3))
+
+            self.assertEqual(["Recent paper"], [paper.title for paper in papers])

@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -62,7 +63,7 @@ class BulkFeatureApiTest(unittest.IsolatedAsyncioTestCase):
             for feed in feeds:
                 await db.refresh(feed)
 
-        async def fake_fetch_feed(db, feed):
+        async def fake_fetch_feed(db, feed, published_since=None):
             paper = Paper(
                 feed_id=feed.id,
                 title=f"Paper from {feed.name}",
@@ -87,6 +88,26 @@ class BulkFeatureApiTest(unittest.IsolatedAsyncioTestCase):
             latest = await db.get(Setting, "latest_fetched_paper_ids")
             self.assertIsNotNone(latest)
             self.assertEqual(sorted(data["paper_ids"]), sorted(json.loads(latest.value)))
+
+    async def test_feeds_fetch_all_forwards_hours_window_to_fetcher(self):
+        async with SessionLocal() as db:
+            feed = Feed(name="Feed A", url="https://example.test/a.xml", enabled=True)
+            db.add(feed)
+            await db.commit()
+            await db.refresh(feed)
+
+        captured = {}
+
+        async def fake_fetch_feed(db, feed, published_since=None):
+            captured["published_since"] = published_since
+            return []
+
+        with patch("app.routers.feeds.fetch_feed", fake_fetch_feed):
+            response = await self.client.post("/api/feeds/fetch-all?hours=72")
+
+        self.assertEqual(200, response.status_code)
+        self.assertIsNotNone(captured["published_since"])
+        self.assertLess(datetime.now(timezone.utc) - captured["published_since"], timedelta(hours=73))
 
     async def test_feeds_bulk_delete_removes_requested_feeds(self):
         async with SessionLocal() as db:
