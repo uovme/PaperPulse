@@ -222,6 +222,7 @@ import { computed, ref, onMounted } from 'vue'
 import { feedApi } from '@/api'
 import type { Feed, FeedCreate } from '@/api'
 import { useAppStore } from '@/stores/app'
+import { formatApiDateTime } from '@/utils/datetime'
 
 const appStore = useAppStore()
 
@@ -244,8 +245,7 @@ const feedForm = ref<FeedCreate>({
 const allSelected = computed(() => feeds.value.length > 0 && selectedIds.value.size === feeds.value.length)
 
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr)
-  return date.toLocaleString('zh-CN', {
+  return formatApiDateTime(dateStr, {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',

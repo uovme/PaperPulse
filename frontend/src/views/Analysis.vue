@@ -147,6 +147,7 @@ import { reactive, ref, onMounted } from 'vue'
 import { analysisApi, keywordApi, emailTopicRuleApi } from '@/api'
 import type { Analysis, Keyword, EmailTopicRule } from '@/api'
 import { useAppStore } from '@/stores/app'
+import { formatApiDateTime } from '@/utils/datetime'
 
 const appStore = useAppStore()
 const analyses = ref<Analysis[]>([])
@@ -173,7 +174,7 @@ function scoreBadgeClass(score: number): string {
 }
 
 function formatDateTime(value: string): string {
-  return value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '-'
+  return formatApiDateTime(value)
 }
 
 function clearFilters() {

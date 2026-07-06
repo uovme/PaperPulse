@@ -318,6 +318,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { dashboardApi, analysisApi, executionApi, workflowApi } from '@/api'
 import type { DashboardStats, RecentPaper, WorkflowExecution, WorkflowExecutionDetail } from '@/api'
 import { useAppStore } from '@/stores/app'
+import { formatApiDateTime } from '@/utils/datetime'
 
 const appStore = useAppStore()
 
@@ -465,8 +466,7 @@ function workflowLabel(name: string): string {
 }
 
 function formatDateTime(value: string | null): string {
-  if (!value) return '-'
-  return new Date(value).toLocaleString('zh-CN', { hour12: false })
+  return formatApiDateTime(value)
 }
 
 function formatDuration(value: number | null): string {

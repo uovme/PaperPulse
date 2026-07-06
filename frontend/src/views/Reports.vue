@@ -230,6 +230,7 @@ import { onMounted, ref } from 'vue'
 import { reportApi } from '@/api'
 import type { Report, ReportDetail } from '@/api'
 import { useAppStore } from '@/stores/app'
+import { formatApiDateTime } from '@/utils/datetime'
 
 const appStore = useAppStore()
 const reports = ref<Report[]>([])
@@ -240,8 +241,7 @@ const actionLoading = ref(false)
 const showMarkdown = ref(false)
 
 function formatDateTime(value: string | null): string {
-  if (!value) return '-'
-  return new Date(value).toLocaleString('zh-CN', { hour12: false })
+  return formatApiDateTime(value)
 }
 
 function statusBadgeClass(status: string): string {

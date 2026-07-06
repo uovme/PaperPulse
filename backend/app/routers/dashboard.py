@@ -110,37 +110,38 @@ async def get_chart_data(
     workspace: Workspace = Depends(get_current_workspace),
 ):
     """Return daily aggregated data for dashboard charts."""
-    from sqlalchemy import cast, Date
     now = datetime.now(timezone.utc)
     cutoff = now - timedelta(days=days)
+    paper_day = func.date(Paper.fetched_at).label("day")
+    analysis_day = func.date(AnalysisResult.analyzed_at).label("day")
 
     # Daily new papers
     paper_q = await db.execute(
         select(
-            cast(Paper.fetched_at, Date).label("day"),
+            paper_day,
             func.count(Paper.id),
         )
         .where(Paper.workspace_id == workspace.id, Paper.fetched_at >= cutoff)
-        .group_by("day")
-        .order_by("day")
+        .group_by(paper_day)
+        .order_by(paper_day)
     )
     daily_papers = {str(row[0]): row[1] for row in paper_q.all()}
 
     # Daily analyses (all) and daily related (score > 0 only)
     analysis_q = await db.execute(
         select(
-            cast(AnalysisResult.analyzed_at, Date).label("day"),
+            analysis_day,
             func.count(AnalysisResult.id),
         )
         .where(AnalysisResult.workspace_id == workspace.id, AnalysisResult.analyzed_at >= cutoff)
-        .group_by("day")
-        .order_by("day")
+        .group_by(analysis_day)
+        .order_by(analysis_day)
     )
     daily_analyses = {str(row[0]): row[1] for row in analysis_q.all()}
 
     related_q = await db.execute(
         select(
-            cast(AnalysisResult.analyzed_at, Date).label("day"),
+            analysis_day,
             func.count(func.distinct(AnalysisResult.paper_id)),
         )
         .where(
@@ -148,8 +149,8 @@ async def get_chart_data(
             AnalysisResult.analyzed_at >= cutoff,
             AnalysisResult.relevance_score > 0,
         )
-        .group_by("day")
-        .order_by("day")
+        .group_by(analysis_day)
+        .order_by(analysis_day)
     )
     daily_related = {str(row[0]): row[1] for row in related_q.all()}
 

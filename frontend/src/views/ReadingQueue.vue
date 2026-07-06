@@ -221,6 +221,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { readingQueueApi } from '@/api'
 import type { ReadingQueueItem, ReadingQueueStatus } from '@/api'
 import { useAppStore } from '@/stores/app'
+import { formatApiDateTime } from '@/utils/datetime'
 
 const appStore = useAppStore()
 const items = ref<ReadingQueueItem[]>([])
@@ -261,7 +262,7 @@ function parseTags(value: string): string[] {
 }
 
 function formatDateTime(value: string | null): string {
-  return value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '-'
+  return formatApiDateTime(value)
 }
 
 function statusText(status: ReadingQueueStatus): string {

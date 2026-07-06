@@ -175,11 +175,10 @@ async def fetch_feed(db: AsyncSession, feed: Feed) -> list[Paper]:
         db.add(paper)
         new_papers.append(paper)
 
-    if new_papers:
-        feed.last_fetched = datetime.now(timezone.utc)
-        await db.commit()
-        for p in new_papers:
-            await db.refresh(p)
+    feed.last_fetched = datetime.now(timezone.utc)
+    await db.commit()
+    for p in new_papers:
+        await db.refresh(p)
 
     logger.info(f"Feed '{feed.name}': {len(new_papers)} new papers")
     return new_papers
