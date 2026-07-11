@@ -6,14 +6,7 @@
       <div class="paper-sidebar-brand flex items-center gap-3 px-4">
         <router-link to="/dashboard" class="flex min-w-0 flex-1 items-center gap-3">
           <div class="paper-logo-mark flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl">
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-              />
-            </svg>
+            <BookOpen :size="18" :stroke-width="1.8" />
           </div>
           <div v-if="!appStore.sidebarCollapsed" class="min-w-0">
             <div class="paper-brand-word truncate" aria-label="PaperPulse">
@@ -48,9 +41,7 @@
               :title="ui.newWorkspace"
               @click="createWorkspace"
             >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5" />
-              </svg>
+              <Plus :size="16" :stroke-width="2" />
             </button>
             <button
               class="rounded-lg border border-[var(--xai-hairline)] px-2 py-2 text-xs text-[var(--xai-danger)] hover:border-[rgba(207,46,60,0.4)]"
@@ -58,9 +49,7 @@
               @click="deleteWorkspace"
               v-if="workspaceStore.currentWorkspace && !workspaceStore.currentWorkspace.is_default"
             >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <Trash2 :size="15" :stroke-width="2" />
             </button>
           </div>
         </div>
@@ -70,9 +59,7 @@
           :title="ui.newWorkspace"
           @click="createWorkspace"
         >
-          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5" />
-          </svg>
+          <Plus :size="16" :stroke-width="2" />
         </button>
       </div>
 
@@ -85,9 +72,10 @@
           :title="item.label"
         >
           <span :class="['paper-side-nav-mark', item.featured ? 'paper-side-nav-mark-featured' : '']">
-            {{ item.mark }}
+            <component :is="item.icon" :size="17" :stroke-width="1.8" />
           </span>
           <span v-if="!appStore.sidebarCollapsed" class="min-w-0 flex-1 truncate">{{ item.label }}</span>
+          <span v-if="!appStore.sidebarCollapsed" class="paper-side-nav-hint">{{ item.hint }}</span>
         </router-link>
       </nav>
 
@@ -100,14 +88,6 @@
             <span class="paper-account-menu-title">{{ ui.settings }}</span>
             <span class="paper-account-menu-desc">{{ ui.settingsDesc }}</span>
           </router-link>
-          <button class="paper-account-menu-item" type="button" @click="toggleLanguageFromMenu">
-            <span class="paper-account-menu-title">{{ ui.switchLanguage }}</span>
-            <span class="paper-account-menu-desc">{{ ui.switchLanguageDesc }}</span>
-          </button>
-          <button class="paper-account-menu-item" type="button" @click="toggleThemeFromMenu">
-            <span class="paper-account-menu-title">{{ ui.switchTheme }}</span>
-            <span class="paper-account-menu-desc">{{ ui.switchThemeDesc }}</span>
-          </button>
           <button class="paper-account-menu-item" type="button" @click="openAbout">
             <span class="paper-account-menu-title">{{ ui.about }}</span>
             <span class="paper-account-menu-desc">{{ ui.aboutDesc }}</span>
@@ -130,9 +110,7 @@
             <span class="mt-1 block truncate text-sm text-[var(--xai-ink)]">{{ appStore.authUsername }}</span>
           </span>
           <span v-if="!appStore.sidebarCollapsed" class="paper-account-chevron">
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6" />
-            </svg>
+            <ChevronDown :size="16" :stroke-width="1.8" />
           </span>
         </button>
         <button
@@ -141,12 +119,8 @@
           @click="appStore.toggleSidebar"
         >
           <span class="paper-side-nav-mark">
-            <svg v-if="appStore.sidebarCollapsed" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 18 6-6-6-6" />
-            </svg>
-            <svg v-else class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m15 18-6-6 6-6" />
-            </svg>
+            <PanelLeftOpen v-if="appStore.sidebarCollapsed" :size="17" :stroke-width="1.8" />
+            <PanelLeftClose v-else :size="17" :stroke-width="1.8" />
           </span>
           <span v-if="!appStore.sidebarCollapsed">{{ ui.collapseSidebar }}</span>
         </button>
@@ -161,16 +135,13 @@
         </div>
         <div v-if="route.path !== '/settings'" class="paper-mainbar-actions">
           <button class="paper-control-button" type="button" :title="ui.toggleLanguageTitle" @click="appStore.toggleLanguage">
+            <Languages :size="16" :stroke-width="1.8" />
             <span class="paper-control-mark">{{ appStore.language === 'zh' ? 'EN' : '中' }}</span>
             <span class="hidden sm:inline">{{ appStore.language === 'zh' ? 'English' : '中文' }}</span>
           </button>
           <button class="paper-control-button" type="button" :title="ui.toggleThemeTitle" @click="appStore.toggleTheme">
-            <svg v-if="appStore.isDarkMode" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36 6.36-1.41-1.41M7.05 7.05 5.64 5.64m12.72 0-1.41 1.41M7.05 16.95l-1.41 1.41M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" />
-            </svg>
-            <svg v-else class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
-            </svg>
+            <Sun v-if="appStore.isDarkMode" :size="16" :stroke-width="1.8" />
+            <Moon v-else :size="16" :stroke-width="1.8" />
             <span class="hidden sm:inline">{{ appStore.isDarkMode ? ui.lightMode : ui.darkMode }}</span>
           </button>
         </div>
@@ -198,9 +169,7 @@
       >
         <div class="flex-1 text-sm">{{ toast.message }}</div>
         <button class="ml-3 opacity-70 hover:opacity-100" @click="appStore.removeToast(toast.id)">
-          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <X :size="16" :stroke-width="1.8" />
         </button>
       </div>
     </div>
@@ -213,9 +182,7 @@
             <h2 id="paper-about-title" class="mt-2 text-xl font-semibold text-[var(--xai-ink)]">PaperPulse</h2>
           </div>
           <button class="paper-about-close" type="button" :title="ui.close" @click="closeAbout">
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X :size="16" :stroke-width="1.8" />
           </button>
         </div>
         <p class="mt-4 text-sm leading-6 text-[var(--xai-body)]">
@@ -273,6 +240,25 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import {
+  BookOpen,
+  BrainCircuit,
+  ChevronDown,
+  FileText,
+  Inbox,
+  Languages,
+  LayoutDashboard,
+  Mail,
+  Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Plus,
+  Radio,
+  ScrollText,
+  Sun,
+  Trash2,
+  X,
+} from '@lucide/vue'
 import { useRoute, useRouter } from 'vue-router'
 import { workspaceApi } from '@/api'
 import { useAppStore } from '@/stores/app'
@@ -353,13 +339,13 @@ const shellCopy = {
       '/settings': '配置偏好、AI、邮件、同步和北京时间定时任务',
     },
     nav: [
-      { path: '/dashboard', label: '仪表盘', mark: '仪', hint: 'Overview', featured: true },
-      { path: '/papers', label: '论文', mark: '论', hint: 'Papers', featured: true },
-      { path: '/analysis', label: '分析结果', mark: '析', hint: 'AI', featured: true },
-      { path: '/reports', label: '报告', mark: '报', hint: 'Reports', featured: true },
-      { path: '/feeds', label: '订阅源', mark: '源', hint: 'RSS', featured: true },
-      { path: '/email-topics', label: '邮件主题', mark: '邮', hint: 'Mail', featured: true },
-      { path: '/reading-queue', label: '阅读队列', mark: '读', hint: 'Queue', featured: true },
+      { path: '/dashboard', label: '仪表盘', icon: 'dashboard', hint: 'Overview', featured: true },
+      { path: '/papers', label: '论文', icon: 'papers', hint: 'Papers', featured: true },
+      { path: '/analysis', label: '分析结果', icon: 'analysis', hint: 'AI', featured: true },
+      { path: '/reports', label: '报告', icon: 'reports', hint: 'Reports', featured: true },
+      { path: '/feeds', label: '订阅源', icon: 'feeds', hint: 'RSS', featured: true },
+      { path: '/email-topics', label: '邮件主题', icon: 'topics', hint: 'Mail', featured: true },
+      { path: '/reading-queue', label: '阅读队列', icon: 'queue', hint: 'Queue', featured: true },
     ],
   },
   en: {
@@ -426,13 +412,13 @@ const shellCopy = {
       '/settings': 'Configure preferences, AI, email, sync, and Beijing-time jobs',
     },
     nav: [
-      { path: '/dashboard', label: 'Dashboard', mark: 'D', hint: 'Overview', featured: true },
-      { path: '/papers', label: 'Papers', mark: 'P', hint: 'Papers', featured: true },
-      { path: '/analysis', label: 'Analysis', mark: 'A', hint: 'AI', featured: true },
-      { path: '/reports', label: 'Reports', mark: 'R', hint: 'Reports', featured: true },
-      { path: '/feeds', label: 'Feeds', mark: 'F', hint: 'RSS', featured: true },
-      { path: '/email-topics', label: 'Email Topics', mark: 'M', hint: 'Mail', featured: true },
-      { path: '/reading-queue', label: 'Reading Queue', mark: 'Q', hint: 'Queue', featured: true },
+      { path: '/dashboard', label: 'Dashboard', icon: 'dashboard', hint: 'Overview', featured: true },
+      { path: '/papers', label: 'Papers', icon: 'papers', hint: 'Papers', featured: true },
+      { path: '/analysis', label: 'Analysis', icon: 'analysis', hint: 'AI', featured: true },
+      { path: '/reports', label: 'Reports', icon: 'reports', hint: 'Reports', featured: true },
+      { path: '/feeds', label: 'Feeds', icon: 'feeds', hint: 'RSS', featured: true },
+      { path: '/email-topics', label: 'Email Topics', icon: 'topics', hint: 'Mail', featured: true },
+      { path: '/reading-queue', label: 'Reading Queue', icon: 'queue', hint: 'Queue', featured: true },
     ],
   },
 }
@@ -444,7 +430,17 @@ const currentSubtitle = computed(() => {
 })
 const pageKey = computed(() => `${route.fullPath}:${workspaceStore.currentWorkspaceId || 'default'}`)
 const accountInitial = computed(() => (appStore.authUsername || 'P').trim().slice(0, 1).toUpperCase())
-const navItems = computed(() => ui.value.nav)
+const navIcons = {
+  dashboard: LayoutDashboard,
+  papers: FileText,
+  analysis: BrainCircuit,
+  reports: ScrollText,
+  feeds: Radio,
+  topics: Mail,
+  queue: Inbox,
+}
+
+const navItems = computed(() => ui.value.nav.map((item) => ({ ...item, icon: navIcons[item.icon as keyof typeof navIcons] })))
 
 function isActive(path: string): boolean {
   if (path === '/email-topics') return ['/email-topics', '/keywords', '/email-rules'].includes(route.path)
@@ -463,16 +459,6 @@ function toggleAccountMenu() {
 
 function closeAccountMenu() {
   accountMenuOpen.value = false
-}
-
-function toggleLanguageFromMenu() {
-  appStore.toggleLanguage()
-  closeAccountMenu()
-}
-
-function toggleThemeFromMenu() {
-  appStore.toggleTheme()
-  closeAccountMenu()
 }
 
 function openAbout() {

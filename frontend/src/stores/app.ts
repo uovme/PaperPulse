@@ -15,7 +15,7 @@ const themeStorageKey = 'paperpulse_theme'
 const languageStorageKey = 'paperpulse_language'
 
 function readTheme(): ThemeMode {
-  return localStorage.getItem(themeStorageKey) === 'light' ? 'light' : 'dark'
+  return localStorage.getItem(themeStorageKey) === 'dark' ? 'dark' : 'light'
 }
 
 function readLanguage(): LanguageCode {
